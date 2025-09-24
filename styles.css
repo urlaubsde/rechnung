@@ -1,0 +1,339 @@
+/*
+================================================================================
+  1. DESIGN SYSTEM & BASE STYLES
+================================================================================
+*/
+:root {
+    /* Color Palette (Light Mode) */
+    --color-primary-50: #f5f3ff; --color-primary-100: #ede9fe; --color-primary-500: #6d28d9; --color-primary-600: #5b21b6;
+    --color-gray-50: #f9fafb; --color-gray-100: #f3f4f6; --color-gray-200: #e5e7eb; --color-gray-400: #9ca3af; --color-gray-600: #4b5563; --color-gray-800: #1f2937; --color-gray-900: #111827;
+    --color-white: #ffffff;
+    --color-danger-500: #ef4444; --color-danger-600: #dc2626;
+    --color-success-500: #22c55e;
+    --color-warning-500: #f59e0b;
+    
+    /* Variables */
+    --bg-app: var(--color-gray-50);
+    --bg-card: var(--color-white);
+    --bg-input: var(--color-gray-50);
+    --bg-input-focus: var(--color-white);
+    --bg-hover: var(--color-gray-100);
+    --text-primary: var(--color-gray-900);
+    --text-secondary: var(--color-gray-600);
+    --text-label: var(--color-gray-800);
+    --border-color: var(--color-gray-200);
+    --focus-ring: var(--color-primary-100);
+    --shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+    --paid-color: var(--color-success-500);
+    --unpaid-color: var(--color-warning-500);
+    --paid-bg-color: #ecfdf5;
+    --unpaid-bg-color: #fffbeb;
+
+    /* Typography */
+    --font-family: 'Inter', sans-serif;
+    --radius: 0.75rem;
+}
+
+/* Dark Mode Palette */
+body.dark-mode {
+    --bg-app: #111015;
+    --bg-card: #1c1b22;
+    --bg-input: #2a2932;
+    --bg-input-focus: #1c1b22;
+    --bg-hover: #2a2932;
+    --text-primary: var(--color-gray-100);
+    --text-secondary: var(--color-gray-400);
+    --text-label: var(--color-gray-200);
+    --border-color: #393843;
+    --focus-ring: rgba(109, 40, 217, 0.3);
+
+    --paid-bg-color: rgba(34, 197, 94, 0.1);
+    --unpaid-bg-color: rgba(245, 158, 11, 0.1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-family); background-color: var(--bg-app); color: var(--text-primary); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1,h2,h3,h4,h5,h6 { margin: 0; font-weight: 600; }
+input, textarea, select, button { font-family: inherit; font-size: 1rem; }
+i { stroke-width: 2px; }
+
+/*
+================================================================================
+  2. APP LAYOUT & STRUCTURE
+================================================================================
+*/
+.app-layout { 
+    display: grid; 
+    grid-template-columns: 260px 1fr;
+    height: 100vh;
+    transition: grid-template-columns 0.3s ease-in-out;
+}
+
+.app-layout.sidebar-hidden {
+    grid-template-columns: 0 1fr;
+}
+
+.sidebar { 
+    background-color: var(--bg-card); 
+    border-right: 1px solid var(--border-color); 
+    display: flex; 
+    flex-direction: column; 
+    padding: 1.5rem;
+    transition: padding 0.3s ease-in-out, visibility 0.3s;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.app-layout.sidebar-hidden .sidebar {
+    padding-left: 0;
+    padding-right: 0;
+    visibility: hidden;
+}
+
+.main-content { overflow-y: auto; }
+body.dark-mode .preview-pane { background-color: #111015; }
+
+.sidebar-header { margin-bottom: 2rem; }
+.logo { font-size: 1.5rem; font-weight: 700; color: var(--color-primary-500); }
+
+.main-nav { display: flex; flex-direction: column; gap: 0.5rem; }
+.nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-secondary); font-weight: 500; transition: all 0.2s ease; }
+.nav-link i { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-link:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+.nav-link.active { background-color: var(--color-primary-50); color: var(--color-primary-600); }
+body.dark-mode .nav-link.active { background-color: rgba(109, 40, 217, 0.2); color: var(--color-primary-100); }
+.sidebar-footer { margin-top: auto; }
+#darkModeToggle .icon-light { display: none; } #darkModeToggle .icon-dark { display: block; }
+body.dark-mode #darkModeToggle .icon-light { display: block; } body.dark-mode #darkModeToggle .icon-dark { display: none; }
+
+.main-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2.5rem; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
+.header-start { display: flex; align-items: center; gap: 1rem; }
+.main-header h2 { font-size: 1.5rem; }
+.header-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-end; }
+
+.page-container { padding: 2.5rem; }
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.main-content > .preview-pane {
+    padding: 0 2.5rem 2.5rem 2.5rem;
+}
+
+/*
+================================================================================
+  3. COMPONENTS
+================================================================================
+*/
+/* --- Cards --- */
+.card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+.card-header h3 { font-size: 1.125rem; font-weight: 600; }
+.card-content { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 1rem; }
+
+/* --- Forms & Inputs --- */
+.form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+label { color: var(--text-label); font-size: 0.875rem; font-weight: 500; }
+label.inline-label { flex-direction: row; align-items: center; gap: 0.5rem; font-weight: 400; color: var(--text-secondary); }
+input, textarea, select { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 1rem; background-color: var(--bg-input); color: var(--text-primary); transition: all 0.2s ease; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--color-primary-500); box-shadow: 0 0 0 3px var(--focus-ring); background-color: var(--bg-input-focus); }
+textarea { resize: vertical; min-height: 90px; }
+fieldset { border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+legend { font-weight: 500; padding: 0 0.5rem; color: var(--text-label); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+input[type="file"] { background-color: transparent; border: none; padding: 0; }
+.quick-add { border-top: 1px solid var(--border-color); padding-top: 1rem; }
+.search-group { position: relative; }
+.search-group i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); width: 20px; height: 20px; }
+.search-group input { padding-left: 3rem; }
+
+/* --- Buttons --- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border-radius: 0.5rem; border: 1px solid transparent; font-size: 0.875rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s ease; }
+.btn i { width: 16px; height: 16px; }
+.btn-primary { background-color: var(--color-primary-500); color: var(--color-white); border-color: var(--color-primary-500); }
+.btn-primary:hover { background-color: var(--color-primary-600); border-color: var(--color-primary-600); }
+.btn-secondary { background-color: var(--bg-card); color: var(--text-secondary); border-color: var(--border-color); box-shadow: var(--shadow); }
+.btn-secondary:hover { background-color: var(--bg-hover); border-color: var(--border-color); color: var(--text-primary); }
+.btn-text { color: var(--color-primary-500); background: transparent; }
+.btn-text:hover { background: var(--color-primary-50); }
+body.dark-mode .btn-text:hover { background: rgba(109, 40, 217, 0.2); }
+.btn-icon { padding: 0.5rem; }
+.btn.danger { color: var(--color-danger-500); background-color: transparent; }
+.btn.danger:hover { background-color: rgba(239, 68, 68, 0.1); }
+table .btn { padding: 4px; }
+
+/* --- Tables --- */
+.table-wrapper { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.875rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; }
+thead th { font-weight: 600; color: var(--text-secondary); background-color: var(--color-gray-50); }
+body.dark-mode thead th { background-color: #2a2932; }
+tbody tr:last-child td { border-bottom: none; }
+.center { text-align: center; }
+.actions-cell { display: flex; justify-content: center; gap: 4px; }
+
+/*
+================================================================================
+  4. PAGE-SPECIFIC STYLES
+================================================================================
+*/
+/* --- Saved Invoices Page --- */
+.summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+.stat-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.25rem; }
+.stat-title { font-size: 0.875rem; color: var(--text-secondary); font-weight: 500; }
+.stat-value { font-size: 1.875rem; font-weight: 700; color: var(--text-primary); display: block; margin-top: 0.25rem; }
+.stat-card.paid .stat-value { color: var(--paid-color); }
+.stat-card.unpaid .stat-value { color: var(--unpaid-color); }
+
+.invoice-controls { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; padding: 1.5rem; border-bottom: 1px solid var(--border-color); align-items: flex-end; }
+.status-select { border-radius: 99px; font-weight: 500; padding: 4px 12px; border-width: 2px; width: auto; background-color: transparent; }
+.status-select.paid { border-color: var(--paid-color); color: var(--paid-color); background-color: var(--paid-bg-color); }
+.status-select.unpaid { border-color: var(--unpaid-color); color: var(--unpaid-color); background-color: var(--unpaid-bg-color); }
+
+/* --- Customers Page --- */
+.customer-list { display: flex; flex-direction: column; gap: 1rem; }
+.saved-inv { background-color: var(--bg-app); padding: 1rem 1.5rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.saved-inv small { color: var(--text-secondary); }
+
+/*
+================================================================================
+  5. PDF & PRINT STYLES
+================================================================================
+*/
+.preview-title { font-size: 1.25rem; margin: 0 0 1.5rem 0; color: var(--text-primary); }
+#preview-wrapper { background: var(--bg-hover); padding: 2rem; border-radius: var(--radius); overflow-x: auto; }
+#preview { /* Beibehaltung der Originalstile für PDF-Konsistenz */
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #384047; padding: 50px; border: none;
+    font-size: 14px; line-height: 1.7; position: relative; width: 210mm; min-height: 297mm; margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0,0,0,0.08);
+}
+#preview .logo { width: 120px; height: auto; margin-bottom: 24px; }
+#preview h2 { color: var(--heading-color, #1a237e); font-size: 2.2rem; font-weight: 300; margin: 0 0 8px 0; letter-spacing: 0.5px; text-align: right; }
+#preview pre { font-family: inherit; margin: 0; padding: 0; white-space: pre-wrap; line-height: 1.6; color: #444; }
+#preview h3 { font-size: 0.9rem; font-weight: 600; color: var(--heading-color, #1a237e); text-transform: uppercase; letter-spacing: 1px; margin: 40px 0 16px 0; border-bottom: 2px solid var(--heading-color, #1a237e); padding-bottom: 8px; }
+#preview ul { list-style: none; padding-left: 0; margin-top: 0; }
+#preview ul li { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+#preview table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+#preview th, #preview td { text-align: left; padding: 12px; border: none; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
+#preview thead th { font-size: 0.8rem; font-weight: bold; color: #667; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #dcdcdc; background-color: transparent; }
+#preview tbody tr:last-child td { border-bottom: none; }
+#preview tfoot .total-row td { padding: 20px 12px; font-weight: bold; font-size: 1.5rem; color: var(--heading-color, #1a237e); border-top: 2px solid var(--heading-color, #1a237e); background-color: transparent; }
+#preview .layover-row td { padding: 8px 12px; font-style: normal; font-size: 0.9em; color: #555; background-color: #f9fafb; }
+#preview::before { content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none; background-image: var(--logo-image-url); background-position: center; background-repeat: no-repeat; background-size: var(--logo-size, 100%); opacity: var(--logo-opacity, 0); }
+
+@media print {
+    body, .app-layout { display: block; }
+    .sidebar, .main-header, .page-container { display: none; }
+    .main-content { overflow: visible; }
+    .preview-pane { display: block !important; padding: 0; }
+    #preview-wrapper { padding: 0; background: transparent; overflow: visible; border: none; }
+    #preview { margin: 0; box-shadow: none; min-height: 0; width: 100%; }
+}
+
+/*
+================================================================================
+  6. MOBILE & RESPONSIVE OPTIMIZATIONS
+================================================================================
+*/
+/* --- Tablets & Small Desktops --- */
+@media (max-width: 1200px) {
+    /* Bugfix: Change grid to block layout to prevent white screen */
+    .app-layout { 
+        display: block;
+        height: auto;
+        min-height: 100vh;
+    }
+    .app-layout.sidebar-hidden {
+        grid-template-columns: 1fr;
+    }
+    
+    /* ------------------- CSS FIX STARTS HERE ------------------- */
+    
+    /* 1. REPLACED 'display: none' with styles for a slide-in overlay menu */
+    .sidebar {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000; /* High z-index to appear above main content */
+        transform: translateX(-100%); /* Start hidden off-screen */
+        transition: transform 0.3s ease-in-out;
+        padding: 1.5rem; /* Restore padding removed by desktop hidden state */
+        visibility: visible; /* Ensure it's visible for the transform to work */
+    }
+
+    /* 2. ADDED rule to slide the sidebar in when the 'sidebar-hidden' class is removed */
+    .app-layout:not(.sidebar-hidden) .sidebar {
+        transform: translateX(0); /* Slide into view */
+    }
+
+    /* 3. REMOVED the rule that hid the toggle button. The button is now always visible. */
+    /* #toggleSidebarBtn { display: none; } was here */
+    
+    /* -------------------- CSS FIX ENDS HERE -------------------- */
+    
+    .main-header, .page-container { padding: 1.5rem; }
+    .main-content > .preview-pane { padding: 0 1.5rem 1.5rem 1.5rem; }
+}
+
+/* --- Smartphones --- */
+@media (max-width: 768px) {
+    .main-header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    /* Hide text on buttons in header */
+    .header-actions .btn span {
+        display: none;
+    }
+    .header-actions .btn {
+        padding: 0.625rem; /* Make buttons square */
+    }
+     .main-header h2 { font-size: 1.25rem; }
+
+    .page-container { padding: 1rem; }
+    .card-content { padding: 1rem; }
+    .card-header { padding: 0.75rem 1rem; }
+
+    /* Stack 2-column grids */
+    .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    /* Stack invoice filter/sort controls */
+    .invoice-controls {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .summary-stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    .saved-inv {
+        padding: 1rem;
+    }
+    .saved-inv .card-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    
+    #preview-wrapper {
+        padding: 1rem;
+    }
+    #preview {
+        padding: 20px;
+    }
+}
