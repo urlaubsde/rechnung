@@ -195,6 +195,75 @@ tbody tr:last-child td { border-bottom: none; }
 .saved-inv { background-color: var(--bg-app); padding: 1rem 1.5rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
 .saved-inv small { color: var(--text-secondary); }
 
+
+/* ========== START: NEUE STYLES FÜR GEPÄCK ========== */
+/* --- Passenger Table --- */
+.baggage-row td {
+    padding-top: 0 !important;
+    padding-bottom: 0.75rem !important;
+    background-color: var(--bg-app);
+    border-top: 1px dashed var(--border-color);
+}
+body.dark-mode .baggage-row td {
+    background-color: #111015; /* --bg-app dark */
+}
+.baggage-editor {
+    padding-top: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.baggage-section h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+.baggage-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.btn-sm { /* Small button class */
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    gap: 0.25rem;
+}
+.btn-sm i {
+    width: 14px;
+    height: 14px;
+}
+.baggage-list {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.baggage-piece {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    background: var(--bg-card);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border-color);
+}
+.baggage-piece span {
+    font-weight: 500;
+}
+.baggage-piece select {
+    width: auto;
+    padding: 4px;
+    font-size: 0.875rem;
+}
+.baggage-piece .remove-bag {
+    margin-left: auto;
+}
+/* ========== ENDE: NEUE STYLES FÜR GEPÄCK ========== */
+
+
 /*
 ================================================================================
   5. PDF & PRINT STYLES
@@ -336,4 +405,10 @@ tbody tr:last-child td { border-bottom: none; }
     #preview {
         padding: 20px;
     }
+    
+    /* ========== START: NEUE STYLES FÜR GEPÄCK (MOBIL) ========== */
+    .baggage-editor {
+        grid-template-columns: 1fr;
+    }
+    /* ========== ENDE: NEUE STYLES FÜR GEPÄCK (MOBIL) ========== */
 }
