@@ -84,7 +84,7 @@ Kundenstraße 2
                         <div class="card-content">
                             <div class="table-wrapper">
                                 <table id="passengerTable">
-                                    <thead><tr><th>Name</th><th>Geburtsdatum</th><th>Gepäck</th><th></th></tr></thead>
+                                    <thead><tr><th>Name</th><th>Geburtsdatum</th><th></th></tr></thead>
                                     <tbody id="passengerBody"></tbody>
                                 </table>
                             </div>
@@ -151,12 +151,24 @@ Kundenstraße 2
                         <div class="card-header"><h3>Notizen & Zahlungsinformationen</h3></div>
                         <div class="card-content">
                             <div class="form-group"><label for="note">Notiz</label><textarea id="note" rows="3">Vielen Dank für Ihre Buchung!</textarea></div>
-                            <div class="form-group"><label for="payment">Zahlungsinformationen</label><textarea id="payment" rows="6">Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:
+                            
+                            <div class="form-group">
+                                <label for="paymentMethod">Zahlungsmethode</label>
+                                <select id="paymentMethod">
+                                    <option value="Überweisung">Überweisung (حوالة بنكية)</option>
+                                    <option value="Barzahlung">Barzahlung (دفع كاش)</option>
+                                </select>
+                            </div>
+                    
+                            <div class="form-group" id="bankDetails">
+                                <label for="payment">Zahlungsinformationen (für Überweisung)</label>
+                                <textarea id="payment" rows="6">Bitte überweisen Sie den Betrag innerhalt von 14 Tagen auf folgendes Konto:
 Name: SALIM AL AHMAD
 IBAN: DE53 1001 1001 2991 8515 34
 BIC: NTSBDEB1XXX
 Bank: N26
-Verwendungszweck: Rechnungsnummer</textarea></div>
+Verwendungszweck: Rechnungsnummer</textarea>
+                            </div>
                         </div>
                     </div>
                      <div class="card">
