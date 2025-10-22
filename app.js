@@ -204,57 +204,174 @@ if(clearBgBtn) clearBgBtn.onclick = ()=>{
   applyBackgroundSettings(); updatePreview();
 }
 
-// Passagiere
-function updateBaggageWeightInputs(inputElement, weights = []) {
-    const count = parseInt(inputElement.value, 10) || 0;
-    const container = inputElement.parentElement.querySelector('.bag-weights');
-    container.innerHTML = '';
-    if (count > 0 && count <= 5) {
-        let options = '';
-        for (let i = 0; i <= 1000; i++) {
-            options += `<option value="${i}">${i} kg</option>`;
-        }
-        for (let i = 1; i <= count; i++) {
-            const weightValue = weights[i - 1] || '23';
-            const div = document.createElement('div');
-            div.style = "display: flex; align-items: center; gap: 8px; margin-bottom: 4px;";
-            div.innerHTML = `
-                <label style="font-size: 0.75rem; margin-bottom: 0; white-space: nowrap;">Gepäck #${i}:</label>
-                <select class="bag-weight">${options}</select>
-            `;
-            container.appendChild(div);
-            const select = div.querySelector('select');
-            select.value = weightValue;
-            select.oninput = updatePreview;
-        }
-    }
+// NEU: Helferfunktion für Zahlungsdetails
+function toggleBankDetails() {
+  const paymentMethodEl = document.getElementById('paymentMethod');
+  const bankDetailsEl = document.getElementById('bankDetails');
+  if (!paymentMethodEl || !bankDetailsEl) return;
+  
+  if (paymentMethodEl.value === 'Überweisung') {
+    bankDetailsEl.style.display = 'flex'; // 'flex' because form-group is display: flex
+  } else {
+    bankDetailsEl.style.display = 'none';
+  }
 }
-function addPassenger(name='',dob='', baggage={count: 0, weights: []}){
-  if(!passengerBody) return;
-  const tr=document.createElement('tr')
-  tr.innerHTML=`<td><input class="pname" value="${escapeHtml(name)}"></td>
-  <td><input class="pdob" type="date" value="${dob}"></td>
-  <td class="baggage-cell">
-   <label style="font-size: 0.75rem; margin-bottom: 4px;">Anzahl</label>
-   <input type="number" min="0" max="5" class="bag-count" value="${baggage.count || 0}" style="width: 60px; padding: 4px; margin-bottom: 8px;">
-   <div class="bag-weights"></div>
-  </td>
-  <td><button class="btn btn-icon danger remove"><i data-lucide="trash-2"></i></button></td>`
-  tr.querySelector('.remove').onclick=()=>{tr.remove();updatePreview()}
-  tr.querySelectorAll('input').forEach(i=>i.oninput=updatePreview)
-  
-  const bagCountInput = tr.querySelector('.bag-count');
-  bagCountInput.oninput = (e) => {
-      updateBaggageWeightInputs(e.target);
-      updatePreview();
-  };
-  
-  passengerBody.appendChild(tr);
-  updateBaggageWeightInputs(bagCountInput, baggage.weights);
-  if (window.lucide) window.lucide.createIcons();
-  updatePreview();
+
+// NEU: Event-Listener für Zahlungsmethode
+if(document.getElementById('paymentMethod')) {
+    document.getElementById('paymentMethod').onchange = () => {
+        toggleBankDetails();
+        updatePreview(); // Aktualisiere die Vorschau bei Änderung
+    };
+}
+
+// ========== START: KOMPLETT NEUES GEPÄCK-SYSTEM ==========
+
+// GELÖSCHT: updateBaggageWeightInputs (alte Funktion)
+
+// NEU: Fügt ein einzelnes Gepäckstück zur UI hinzu
+function addBaggagePiece(listElement, type, weight = '23') {
+    const div = document.createElement('div');
+    div.className = 'baggage-piece';
+    div.dataset.type = type;
+
+    let options = '';
+    for (let i = 0; i <= 100; i++) {
+        options += `<option value="${i}" ${i == weight ? 'selected' : ''}>${i} kg</option>`;
+    }
+
+    div.innerHTML = `
+        <span>${escapeHtml(type)}:</span>
+        <select class="bag-weight">${options}</select>
+        <button class="btn btn-icon danger remove-bag" title="Gepäckstück entfernen">
+            <i data-lucide="x"></i>
+        </button>
+    `;
+
+    div.querySelector('.remove-bag').onclick = () => {
+        div.remove();
+        updatePreview();
+    };
+    div.querySelector('select').oninput = updatePreview;
+    
+    listElement.appendChild(div);
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// NEU: Fügt einen Passagier (mit neuem Gepäck-Editor) hinzu
+function addPassenger(name = '', dob = '', baggage = null) {
+    if (!passengerBody) return;
+
+    // Haupt-TR für Passagierdaten
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input class="pname" value="${escapeHtml(name)}"></td>
+        <td><input class="pdob" type="date" value="${dob}"></td>
+        <td><button class="btn btn-icon danger remove"><i data-lucide="trash-2"></i></button></td>
+    `;
+    
+    // Zweiter TR für den Gepäck-Editor
+    const trBaggage = document.createElement('tr');
+    trBaggage.className = 'baggage-row';
+    
+    const returnStyle = document.getElementById('returnSection') ? 'display: block;' : 'display: none;';
+
+    trBaggage.innerHTML = `
+        <td colspan="3">
+            <div class="baggage-editor">
+                <div class="baggage-section" data-flight="outbound">
+                    <h5>Hinflug</h5>
+                    <div class="baggage-controls">
+                        <button class="btn btn-secondary btn-sm add-bag" data-type="Aufgabegepäck"><i data-lucide="plus"></i>Aufgabegepäck</button>
+                        <button class="btn btn-secondary btn-sm add-bag" data-type="Handgepäck"><i data-lucide="plus"></i>Handgepäck</button>
+                    </div>
+                    <div class="baggage-list"></div>
+                </div>
+                <div class="baggage-section" data-flight="return" style="${returnStyle}">
+                    <h5>Rückflug</h5>
+                    <div class="baggage-controls">
+                        <button class="btn btn-secondary btn-sm add-bag" data-type="Aufgabegepäck"><i data-lucide="plus"></i>Aufgabegepäck</button>
+                        <button class="btn btn-secondary btn-sm add-bag" data-type="Handgepäck"><i data-lucide="plus"></i>Handgepäck</button>
+                    </div>
+                    <div class="baggage-list"></div>
+                </div>
+            </div>
+        </td>
+    `;
+
+    // Event Listeners
+    tr.querySelector('.remove').onclick = () => {
+        tr.remove();
+        trBaggage.remove();
+        updatePreview();
+    };
+    tr.querySelectorAll('input').forEach(i => i.oninput = updatePreview);
+
+    const outboundList = trBaggage.querySelector('[data-flight="outbound"] .baggage-list');
+    const returnList = trBaggage.querySelector('[data-flight="return"] .baggage-list');
+
+    trBaggage.querySelectorAll('.add-bag').forEach(btn => {
+        btn.onclick = (e) => {
+            const type = e.currentTarget.dataset.type;
+            const section = e.currentTarget.closest('.baggage-section');
+            const list = section.querySelector('.baggage-list');
+            const defaultWeight = (type === 'Handgepäck') ? '8' : '23';
+            addBaggagePiece(list, type, defaultWeight);
+            updatePreview();
+        };
+    });
+
+    // Lade vorhandene Gepäckdaten (beim Laden einer Rechnung)
+    if (baggage) {
+        (baggage.outbound || []).forEach(b => addBaggagePiece(outboundList, b.type, b.weight));
+        (baggage.return || []).forEach(b => addBaggagePiece(returnList, b.type, b.weight));
+    }
+
+    passengerBody.appendChild(tr);
+    passengerBody.appendChild(trBaggage);
+    
+    if (window.lucide) window.lucide.createIcons();
+    updatePreview();
 }
 if(addPassengerBtn) addPassengerBtn.onclick=()=>addPassenger()
+
+// NEU: Helferfunktion zum Sammeln der Gepäckdaten eines Passagiers
+function collectBaggageData(passengerRow) {
+    const baggageRow = passengerRow.nextElementSibling;
+    if (!baggageRow || !baggageRow.classList.contains('baggage-row')) {
+        return { outbound: [], return: [] };
+    }
+
+    const collectFromList = (list) => {
+        return [...list.querySelectorAll('.baggage-piece')].map(piece => ({
+            type: piece.dataset.type,
+            weight: piece.querySelector('.bag-weight').value
+        }));
+    };
+
+    const outboundList = baggageRow.querySelector('[data-flight="outbound"] .baggage-list');
+    const returnList = baggageRow.querySelector('[data-flight="return"] .baggage-list');
+
+    return {
+        outbound: collectFromList(outboundList),
+        return: collectFromList(returnList)
+    };
+}
+
+// NEU: Helferfunktion zum Formatieren von Gepäckdaten für die Vorschau
+function formatBaggage(baggageArray) {
+    if (!baggageArray || baggageArray.length === 0) return '';
+    const counts = {};
+    baggageArray.forEach(b => {
+        // Schlüssel ist "Typ (Gewicht kg)"
+        const key = `${b.type} (${b.weight} kg)`;
+        counts[key] = (counts[key] || 0) + 1;
+    });
+    // Erzeugt "2x Aufgabegepäck (23 kg), 1x Handgepäck (8 kg)"
+    return Object.entries(counts).map(([key, count]) => `${count}x ${key}`).join(', ');
+}
+// ========== ENDE: KOMPLETT NEUES GEPÄCK-SYSTEM ==========
+
 
 // Flugzeilen
 function addFlightRow(bodyEl,fromCity='',toCity='',depDate='',depTime='',arrDate='',arrTime='',airline='',pnr='', duration=''){
@@ -313,9 +430,26 @@ if(addReturnSectionBtn) addReturnSectionBtn.onclick=()=>{
       div.remove();
       returnSectionContainer.innerHTML = `<button class="btn btn-text" id="addReturnSection"><i data-lucide="corner-down-left"></i>Rückflug-Option hinzufügen</button>`;
       document.getElementById('addReturnSection').onclick = addReturnSectionBtn.onclick;
+      
+      // ========== START: GEPÄCK-ÄNDERUNG ==========
+      // Verstecke alle Rückflug-Gepäck-Sektionen und leere sie
+      document.querySelectorAll('.baggage-section[data-flight="return"]').forEach(el => {
+          el.style.display = 'none';
+          el.querySelector('.baggage-list').innerHTML = '';
+      });
+      // ========== ENDE: GEPÄCK-ÄNDERUNG ==========
+      
       if (window.lucide) window.lucide.createIcons();
       updatePreview();
   }
+  
+  // ========== START: GEPÄCK-ÄNDERUNG ==========
+  // Zeige alle Rückflug-Gepäck-Sektionen an
+  document.querySelectorAll('.baggage-section[data-flight="return"]').forEach(el => {
+      el.style.display = 'block';
+  });
+  // ========== ENDE: GEPÄCK-ÄNDERUNG ==========
+  
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -403,19 +537,41 @@ function updatePreview(){
   if (customerPhone) toBlock += `\n${escapeHtml(customerPhone)}`;
 
   const note=document.getElementById('note').value
-  const payment=document.getElementById('payment').value.replace("Rechnungsnummer", number)
+  
+  const paymentMethod = document.getElementById('paymentMethod').value;
+  let paymentHtml = '';
+  if (paymentMethod === 'Überweisung') {
+      const payment=document.getElementById('payment').value.replace("Rechnungsnummer", number);
+      if (payment) paymentHtml = `<h3>Zahlungsinformationen</h3><p>${escapeHtml(payment).replace(/\n/g,"<br>")}</p>`;
+  } else if (paymentMethod === 'Barzahlung') {
+      paymentHtml = `<h3>Zahlungsinformationen</h3><p>Zahlungsmethode: Barzahlung</p>`;
+  }
+  
   let netto=0
-  const passengers=[...document.querySelectorAll('#passengerBody tr')].map(r=>{
+  
+  // ========== START: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
+  const passengers=[...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>{
     const name = r.querySelector('.pname').value;
     const dob = r.querySelector('.pdob').value;
-    const bagCount = parseInt(r.querySelector('.bag-count').value, 10) || 0;
+    
+    // Sammle und formatiere Gepäck
+    const baggageData = collectBaggageData(r);
+    const outBaggage = formatBaggage(baggageData.outbound);
+    const retBaggage = formatBaggage(baggageData.return);
+
     let baggageInfo = '';
-    if (bagCount > 0) {
-        const weights = [...r.querySelectorAll('.bag-weight')].map(sel => sel.value + ' kg').join(', ');
-        baggageInfo = `<br><small style="color: #555;">Gepäck: ${bagCount} Stk (${weights})</small>`;
+    if (outBaggage) {
+        baggageInfo += `<br><small style="color: #555;"><b>Hinflug:</b> ${escapeHtml(outBaggage)}</small>`;
     }
+    // Zeige Rückflug-Gepäck nur an, wenn die Rückflug-Sektion existiert
+    if (retBaggage && document.getElementById('returnSection')) {
+        baggageInfo += `<br><small style="color: #555;"><b>Rückflug:</b> ${escapeHtml(retBaggage)}</small>`;
+    }
+    
     return `<li>${escapeHtml(name)} (${dob})${baggageInfo}</li>`;
   }).join("")
+  // ========== ENDE: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
+  
   const outboundFlights=collectFlights('outboundBody')
   const returnFlights=document.getElementById('returnBody') ? collectFlights('returnBody') : []
   applyBackgroundSettings()
@@ -490,7 +646,7 @@ function updatePreview(){
         </table>
         <p style="margin-top:20px;font-size:13px;color:#555">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
         ${note ? `<h3>Notiz</h3><p>${escapeHtml(note).replace(/\n/g,"<br>")}</p>` : ""}
-        ${payment ? `<h3>Zahlungsinformationen</h3><p>${escapeHtml(payment).replace(/\n/g,"<br>")}</p>` : ""}
+        ${paymentHtml}
     </div>
     <div class="pdf-block" style="border-top: 1px solid #ccc; margin-top: 40px; padding-top: 10px; text-align: center; font-size: 0.8rem; color: #555;">
         Email: urlaubsde@gmail.com | Telefon: +4917664957576
@@ -504,11 +660,14 @@ if (updatePreviewBtn) {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('pageInvoices')) {
+    // Füge Passagiere ohne Gepäck-Daten hinzu (die UI wird erstellt)
     addPassenger("Max Mustermann","1985-05-10");
     addPassenger("Erika Mustermann","1987-07-21");
+    
     addFlightRow('outboundBody',"Hamburg","Rom","2025-09-12","08:15","2025-09-12","11:05", "Lufthansa LH24", "ABCDE1");
     addItem("Hotel 7 Nächte",1,560);
     updatePreview();
+    toggleBankDetails(); 
   }
 });
 
@@ -643,6 +802,7 @@ if (downloadPDFBtn) downloadPDFBtn.onclick = async () => {
 
 // Save/Load
 function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
 function collectInvoiceData(){
   const totalOutboundEl = document.getElementById('totalOutboundDuration');
   const totalReturnEl = document.getElementById('totalReturnDuration');
@@ -650,18 +810,20 @@ function collectInvoiceData(){
     number: invoiceNumberEl.value, date: invoiceDateEl.value,
     from: document.getElementById('from').value, to: document.getElementById('to').value,
     note: document.getElementById('note').value, payment: document.getElementById('payment').value,
-    passengers: [...document.querySelectorAll('#passengerBody tr')].map(r=>({ 
+    
+    // ========== START: GEPÄCK-ÄNDERUNG (Speichern) ==========
+    passengers: [...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>({ 
         name: r.querySelector('.pname').value, 
         dob: r.querySelector('.pdob').value,
-        baggage: {
-            count: r.querySelector('.bag-count').value,
-            weights: [...r.querySelectorAll('.bag-weight')].map(sel => sel.value)
-        }
+        baggage: collectBaggageData(r) // Verwende die neue Helferfunktion
     })),
+    // ========== ENDE: GEPÄCK-ÄNDERUNG (Speichern) ==========
+    
     outbound: collectFlights('outboundBody'),
     returns: document.getElementById('returnBody') ? collectFlights('returnBody') : [],
     totalOutboundDuration: totalOutboundEl ? totalOutboundEl.value : '',
     totalReturnDuration: totalReturnEl ? totalReturnEl.value : '',
+    paymentMethod: document.getElementById('paymentMethod').value, 
     items: [...document.querySelectorAll('#itemsBody tr')].map(r=>({ option: r.querySelector('.opt').value, desc: r.querySelector('.desc').value, qty: r.querySelector('.qty').value, price: r.querySelector('.price').value })),
     logo: logoData,
     bgSettings: { enabled: bgToggle.checked, size: bgSize.value, opacity: bgOpacity.value, color: bgColor.value, colorOpacity: bgColorOpacity.value, headingColor: headingColorEl.value },
@@ -831,13 +993,23 @@ function loadInvoice(number){
   invoiceNumberEl.value = inv.number; invoiceDateEl.value = inv.date
   document.getElementById('from').value = inv.from || ''; document.getElementById('to').value = inv.to || ''
   document.getElementById('note').value = inv.note || ''; document.getElementById('payment').value = inv.payment || ''
+  
+  const paymentMethodEl = document.getElementById('paymentMethod');
+  if (paymentMethodEl) {
+      paymentMethodEl.value = inv.paymentMethod || 'Überweisung'; 
+  }
+  
   passengerBody.innerHTML = ''; outboundBody.innerHTML = ''; itemsBody.innerHTML = ''
   
   returnSectionContainer.innerHTML = `<button class="btn btn-text" id="addReturnSection"><i data-lucide="corner-down-left"></i>Rückflug-Option hinzufügen</button>`;
   document.getElementById('addReturnSection').onclick = addReturnSectionBtn.onclick;
   if(window.lucide) window.lucide.createIcons();
   
-  (inv.passengers||[]).forEach(p=>addPassenger(p.name,p.dob, p.baggage))
+  // ========== START: GEPÄCK-ÄNDERUNG (Laden) ==========
+  // Rufe die NEUE addPassenger-Funktion auf, die das Gepäck-Objekt verarbeiten kann
+  (inv.passengers||[]).forEach(p=>addPassenger(p.name, p.dob, p.baggage))
+  // ========== ENDE: GEPÄCK-ÄNDERUNG (Laden) ==========
+  
   ;(inv.outbound||[]).forEach(f=>addFlightRow('outboundBody',f.fromCity,f.toCity,f.depDate,f.depTime,f.arrDate,f.arrTime,f.airline,f.pnr, f.duration))
   
   if(inv.returns && inv.returns.length){
@@ -864,7 +1036,9 @@ function loadInvoice(number){
     bgColorOpacity.value = inv.bgSettings.colorOpacity;
     headingColorEl.value = inv.bgSettings.headingColor || '#0277bd';
   }
-  applyBackgroundSettings(); updatePreview()
+  applyBackgroundSettings(); 
+  toggleBankDetails(); 
+  updatePreview()
 }
 function loadInvoiceAndDownload(number){ 
     loadInvoice(number); 
@@ -973,7 +1147,7 @@ function renderCustomerList() {
         document.getElementById('customerEmail').value = cust.email || '';
         document.getElementById('customerPhone').value = cust.phone || '';
         passengerBody.innerHTML = '';
-        addPassenger(`${cust.firstName} ${cust.lastName}`, cust.dob);
+        addPassenger(`${cust.firstName} ${cust.lastName}`, cust.dob); // Fügt Passagier ohne Gepäck hinzu
         showPage('invoices');
         updatePreview();
       }
