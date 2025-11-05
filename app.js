@@ -548,6 +548,16 @@ function updatePreview(){
   }
   
   let netto=0
+  const includeTaxCheckbox = document.getElementById('includeTax')
+  const invoiceTypeSelect = document.getElementById('invoiceType')
+  
+  if (includeTaxCheckbox) {
+    includeTaxCheckbox.addEventListener('change', updatePreview)
+  }
+  
+  if (invoiceTypeSelect) {
+    invoiceTypeSelect.addEventListener('change', updatePreview)
+  }
   
   // ========== START: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
   const passengers=[...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>{
@@ -605,12 +615,20 @@ function updatePreview(){
     return `<h3 class="flight-heading">${title}</h3><table><thead><tr><th>Von</th><th>Nach</th><th>Abflug</th><th>Ankunft</th><th>Dauer</th></tr></thead><tbody>${rowsHtml}</tbody></table>${totalDurationHtml}`;
   }
 
+  const invoiceType = invoiceTypeSelect ? invoiceTypeSelect.value : 'flight'
+  
   const items=[...document.querySelectorAll('#itemsBody tr')].map(r=>{
     const d=r.querySelector('.desc').value, q=toNum(r.querySelector('.qty').value), p=toNum(r.querySelector('.price').value)
     const line=q*p; netto+=line; r.querySelector('.line').textContent=format(line)
     const opt = r.querySelector('.opt').value
     return `<tr><td>${escapeHtml(opt)}</td><td>${escapeHtml(d)}</td><td class="center">${q}</td><td class="center">${format(p)}</td><td class="center">${format(line)}</td></tr>`
   }).join("")
+  
+  // حساب المبلغ الإجمالي مع أو بدون ضريبة
+  const taxRate = 0.19 // 19% ضريبة المبيعات
+  const includeTax = includeTaxCheckbox && includeTaxCheckbox.checked
+  const taxAmount = includeTax ? netto * taxRate : 0
+  const totalAmount = includeTax ? netto + taxAmount : netto
 
   previewEl.innerHTML=`
     <div class="pdf-block invoice-header">
@@ -620,31 +638,27 @@ function updatePreview(){
             <pre style="font-family: inherit; margin: 0;">${escapeHtml(from)}</pre>
           </div>
           <div style="text-align:right">
-            <h2>Rechnung Nr. ${escapeHtml(number)}</h2>
+            <h2>${invoiceType === "flight" ? "Flugrechnung" : "Rechnung"} Nr. ${escapeHtml(number)}</h2>
             <p><b>Datum:</b> ${escapeHtml(date)}</p>
             <h3>Rechnung an:</h3>
             <pre style="font-family: inherit; margin: 0;">${toBlock}</pre>
           </div>
         </div>
     </div>
-    <div class="pdf-block invoice-passengers">
-        <h3>Passagiere</h3>
-        <ul>${passengers}</ul>
-    </div>
-    <div class="pdf-block invoice-outbound">
-        ${renderFlights("Hinflug",outboundFlights)}
-    </div>
-    <div class="pdf-block invoice-return">
-        ${renderFlights("Rückflug",returnFlights)}
-    </div>
-    <div class="pdf-block invoice-payment-block">
-        <h3>Weitere Leistungen</h3>
+    ${invoiceType === "flight" ? `<div class="pdf-block invoice-passengers"><h3>Passagiere</h3><ul>${passengers}</ul></div>` : ""}
+    ${invoiceType === "flight" ? `<div class="pdf-block invoice-outbound">${renderFlights("Hinflug",outboundFlights)}</div><div class="pdf-block invoice-return">${renderFlights("Rückflug",returnFlights)}</div>` : ""}
+    <div class="pdf-block ${invoiceType === "flight" ? "invoice-" : ""}payment-block">
+        <h3>${invoiceType === "flight" ? "Weitere Leistungen" : "Leistungen"}</h3>
         <table>
           <thead><tr><th>Option</th><th>Beschreibung</th><th class="center">Menge</th><th class="center">Preis (€ / Stück)</th><th class="center">Gesamt (€)</th></tr></thead>
           <tbody>${items}</tbody>
-          <tfoot><tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px;">Gesamtsumme</td><td class="center">${format(netto)} €</td></tr></tfoot>
+          <tfoot>
+            <tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px;">${includeTax ? 'Zwischensumme' : 'Gesamtsumme'}</td><td class="center">${format(netto)} €</td></tr>
+            ${includeTax ? `<tr class="tax-row"><td colspan="4" style="text-align:right; padding-right: 20px;">Umsatzsteuer (19%)</td><td class="center">${format(taxAmount)} €</td></tr>` : ''}
+            ${includeTax ? `<tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px; font-weight:bold;">Gesamtsumme</td><td class="center" style="font-weight:bold;">${format(totalAmount)} €</td></tr>` : ''}
+          </tfoot>
         </table>
-        <p style="margin-top:20px;font-size:13px;color:#555">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
+        <p style="margin-top:20px;font-size:13px;color:#555">${includeTax ? "Inklusive 19% Umsatzsteuer." : "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."}</p>
         ${note ? `<h3>Notiz</h3><p>${escapeHtml(note).replace(/\n/g,"<br>")}</p>` : ""}
         ${paymentHtml}
     </div>
