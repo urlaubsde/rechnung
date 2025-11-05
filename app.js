@@ -44,10 +44,12 @@ function toNum(v){return parseFloat(String(v).replace(",", "."))||0}
 const pageInvoices = document.getElementById('pageInvoices');
 const pageSavedInvoices = document.getElementById('pageSavedInvoices');
 const pageCustomers = document.getElementById('pageCustomers');
+const pageCalculator = document.getElementById('pageCalculator'); // New Calculator Page
 const navButtons = {
   invoices: document.getElementById('navInvoices'),
   saved: document.getElementById('navSavedInvoices'),
   customers: document.getElementById('navCustomers'),
+  calculator: document.getElementById('navCalculator'), // New Calculator Nav Button
 };
 
 function showPage(pageId) {
@@ -55,6 +57,7 @@ function showPage(pageId) {
   if(pageInvoices) pageInvoices.style.display = 'none';
   if(pageSavedInvoices) pageSavedInvoices.style.display = 'none';
   if(pageCustomers) pageCustomers.style.display = 'none';
+  if(pageCalculator) pageCalculator.style.display = 'none'; // Hide calculator
 
   // Zeige die ausgewählte Seite an
   if (pageId === 'saved' && pageSavedInvoices) {
@@ -63,6 +66,8 @@ function showPage(pageId) {
   } else if (pageId === 'customers' && pageCustomers) {
     pageCustomers.style.display = 'flex'; // Use flex for new layout
     renderCustomerList();
+  } else if (pageId === 'calculator' && pageCalculator) {
+    pageCalculator.style.display = 'flex'; // Show calculator
   } else { // Standardfall ist 'invoices'
     if(pageInvoices) pageInvoices.style.display = 'flex'; // Use flex for new layout
   }
@@ -70,6 +75,7 @@ function showPage(pageId) {
 if(navButtons.invoices) navButtons.invoices.onclick = () => showPage('invoices');
 if(navButtons.saved) navButtons.saved.onclick = () => showPage('saved');
 if(navButtons.customers) navButtons.customers.onclick = () => showPage('customers');
+if(navButtons.calculator) navButtons.calculator.onclick = () => showPage('calculator'); // New event listener
 
 const selectCustomerBtn = document.getElementById('selectCustomerBtn');
 if(selectCustomerBtn) selectCustomerBtn.onclick = () => showPage('customers');
@@ -548,16 +554,6 @@ function updatePreview(){
   }
   
   let netto=0
-  const includeTaxCheckbox = document.getElementById('includeTax')
-  const invoiceTypeSelect = document.getElementById('invoiceType')
-  
-  if (includeTaxCheckbox) {
-    includeTaxCheckbox.addEventListener('change', updatePreview)
-  }
-  
-  if (invoiceTypeSelect) {
-    invoiceTypeSelect.addEventListener('change', updatePreview)
-  }
   
   // ========== START: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
   const passengers=[...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>{
@@ -615,20 +611,12 @@ function updatePreview(){
     return `<h3 class="flight-heading">${title}</h3><table><thead><tr><th>Von</th><th>Nach</th><th>Abflug</th><th>Ankunft</th><th>Dauer</th></tr></thead><tbody>${rowsHtml}</tbody></table>${totalDurationHtml}`;
   }
 
-  const invoiceType = invoiceTypeSelect ? invoiceTypeSelect.value : 'flight'
-  
   const items=[...document.querySelectorAll('#itemsBody tr')].map(r=>{
     const d=r.querySelector('.desc').value, q=toNum(r.querySelector('.qty').value), p=toNum(r.querySelector('.price').value)
     const line=q*p; netto+=line; r.querySelector('.line').textContent=format(line)
     const opt = r.querySelector('.opt').value
     return `<tr><td>${escapeHtml(opt)}</td><td>${escapeHtml(d)}</td><td class="center">${q}</td><td class="center">${format(p)}</td><td class="center">${format(line)}</td></tr>`
   }).join("")
-  
-  // حساب المبلغ الإجمالي مع أو بدون ضريبة
-  const taxRate = 0.19 // 19% ضريبة المبيعات
-  const includeTax = includeTaxCheckbox && includeTaxCheckbox.checked
-  const taxAmount = includeTax ? netto * taxRate : 0
-  const totalAmount = includeTax ? netto + taxAmount : netto
 
   previewEl.innerHTML=`
     <div class="pdf-block invoice-header">
@@ -638,27 +626,31 @@ function updatePreview(){
             <pre style="font-family: inherit; margin: 0;">${escapeHtml(from)}</pre>
           </div>
           <div style="text-align:right">
-            <h2>${invoiceType === "flight" ? "Flugrechnung" : "Rechnung"} Nr. ${escapeHtml(number)}</h2>
+            <h2>Rechnung Nr. ${escapeHtml(number)}</h2>
             <p><b>Datum:</b> ${escapeHtml(date)}</p>
             <h3>Rechnung an:</h3>
             <pre style="font-family: inherit; margin: 0;">${toBlock}</pre>
           </div>
         </div>
     </div>
-    ${invoiceType === "flight" ? `<div class="pdf-block invoice-passengers"><h3>Passagiere</h3><ul>${passengers}</ul></div>` : ""}
-    ${invoiceType === "flight" ? `<div class="pdf-block invoice-outbound">${renderFlights("Hinflug",outboundFlights)}</div><div class="pdf-block invoice-return">${renderFlights("Rückflug",returnFlights)}</div>` : ""}
-    <div class="pdf-block ${invoiceType === "flight" ? "invoice-" : ""}payment-block">
-        <h3>${invoiceType === "flight" ? "Weitere Leistungen" : "Leistungen"}</h3>
+    <div class="pdf-block invoice-passengers">
+        <h3>Passagiere</h3>
+        <ul>${passengers}</ul>
+    </div>
+    <div class="pdf-block invoice-outbound">
+        ${renderFlights("Hinflug",outboundFlights)}
+    </div>
+    <div class="pdf-block invoice-return">
+        ${renderFlights("Rückflug",returnFlights)}
+    </div>
+    <div class="pdf-block invoice-payment-block">
+        <h3>Weitere Leistungen</h3>
         <table>
           <thead><tr><th>Option</th><th>Beschreibung</th><th class="center">Menge</th><th class="center">Preis (€ / Stück)</th><th class="center">Gesamt (€)</th></tr></thead>
           <tbody>${items}</tbody>
-          <tfoot>
-            <tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px;">${includeTax ? 'Zwischensumme' : 'Gesamtsumme'}</td><td class="center">${format(netto)} €</td></tr>
-            ${includeTax ? `<tr class="tax-row"><td colspan="4" style="text-align:right; padding-right: 20px;">Umsatzsteuer (19%)</td><td class="center">${format(taxAmount)} €</td></tr>` : ''}
-            ${includeTax ? `<tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px; font-weight:bold;">Gesamtsumme</td><td class="center" style="font-weight:bold;">${format(totalAmount)} €</td></tr>` : ''}
-          </tfoot>
+          <tfoot><tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px;">Gesamtsumme</td><td class="center">${format(netto)} €</td></tr></tfoot>
         </table>
-        <p style="margin-top:20px;font-size:13px;color:#555">${includeTax ? "Inklusive 19% Umsatzsteuer." : "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."}</p>
+        <p style="margin-top:20px;font-size:13px;color:#555">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
         ${note ? `<h3>Notiz</h3><p>${escapeHtml(note).replace(/\n/g,"<br>")}</p>` : ""}
         ${paymentHtml}
     </div>
@@ -1194,4 +1186,146 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+});
+
+// --- PERCENTAGE CALCULATOR LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+    if (!document.getElementById('pageCalculator')) return;
+
+    const defaultPercentages = {
+        '0-150': 20,
+        '151-300': 17.833333,
+        '301-450': 15.666667,
+        '451-600': 13.5,
+        '601-750': 11.333333,
+        '751-900': 9.166667,
+        '901-1050': 7,
+        '1051+': 6
+    };
+
+    const calcInput = document.getElementById('calcInput');
+    const clearCalcInputBtn = document.getElementById('clearCalcInput');
+    const resultWrapper = document.getElementById('calcResultWrapper');
+    const resultEl = document.getElementById('calcResult');
+    const percentageNoteEl = document.getElementById('calcPercentageNote');
+    const copyBtn = document.getElementById('copyCalcResult');
+    const settingsGrid = document.getElementById('percentageSettingsGrid');
+    const resetBtn = document.getElementById('resetPercentages');
+    const toastContainer = document.getElementById('toast-container');
+
+    let percentageInputs = {};
+
+    // --- Toast Notification --- 
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    // --- Main Calculation Logic ---
+    function calculate() {
+        const rawValue = parseFloat(calcInput.value);
+
+        if (isNaN(rawValue) || rawValue <= 0) {
+            resultWrapper.style.display = 'none';
+            clearCalcInputBtn.style.display = 'none';
+            return;
+        }
+
+        clearCalcInputBtn.style.display = 'block';
+        resultWrapper.style.display = 'block';
+
+        let percentage = 0;
+        let appliedTier = '';
+
+        const tiers = Object.keys(percentageInputs).sort((a, b) => {
+            return parseInt(a.split('-')[0]) - parseInt(b.split('-')[0]);
+        });
+
+        for (const tier of tiers) {
+            const currentPercentage = parseFloat(percentageInputs[tier].value) || 0;
+            if (tier.includes('+')) {
+                const lower = parseInt(tier.replace('+', ''));
+                if (rawValue >= lower) {
+                    percentage = currentPercentage;
+                    appliedTier = tier;
+                }
+            } else {
+                const [lower, upper] = tier.split('-').map(Number);
+                if (rawValue >= lower && rawValue <= upper) {
+                    percentage = currentPercentage;
+                    appliedTier = tier;
+                }
+            }
+        }
+
+        const finalValue = rawValue + (rawValue * (percentage / 100));
+
+        const formatter = new Intl.NumberFormat('de-DE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        resultEl.textContent = formatter.format(finalValue);
+        percentageNoteEl.textContent = `تمت إضافة ${formatter.format(percentage)}% (الفئة: ${appliedTier})`;
+    }
+
+    // --- Setup and Event Listeners ---
+    function setupCalculator() {
+        // 1. Populate settings grid
+        settingsGrid.innerHTML = '';
+        Object.entries(defaultPercentages).forEach(([tier, value]) => {
+            const item = document.createElement('div');
+            item.className = 'percentage-item';
+            
+            const label = document.createElement('label');
+            label.textContent = `الفئة ${tier}`;
+            
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.step = 'any';
+            input.value = value;
+            input.dataset.tier = tier;
+            input.addEventListener('input', calculate);
+
+            item.appendChild(label);
+            item.appendChild(input);
+            settingsGrid.appendChild(item);
+
+            percentageInputs[tier] = input;
+        });
+
+        // 2. Attach event listeners
+        calcInput.addEventListener('input', calculate);
+        clearCalcInputBtn.addEventListener('click', () => {
+            calcInput.value = '';
+            calculate();
+        });
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(resultEl.textContent).then(() => {
+                showToast('تم نسخ النتيجة بنجاح!');
+            }).catch(err => {
+                showToast('فشل النسخ!');
+                console.error('Failed to copy: ', err);
+            });
+        });
+
+        resetBtn.addEventListener('click', () => {
+            Object.entries(defaultPercentages).forEach(([tier, value]) => {
+                percentageInputs[tier].value = value;
+            });
+            calculate();
+            showToast('تمت إعادة ضبط القيم الافتراضية.');
+        });
+
+        // Initial calculation
+        calculate();
+    }
+
+    setupCalculator();
 });
