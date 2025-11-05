@@ -151,6 +151,19 @@ Kundenstraße 2
                         <div class="card-header"><h3>Notizen & Zahlungsinformationen</h3></div>
                         <div class="card-content">
                             <div class="form-group"><label for="note">Notiz</label><textarea id="note" rows="3">Vielen Dank für Ihre Buchung!</textarea></div>
+                            <div class="form-group">
+                                <label for="invoiceType">Rechnungstyp</label>
+                                <select id="invoiceType">
+                                    <option value="flight">Flugrechnung</option>
+                                    <option value="standard">Standardrechnung</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="inline-label">
+                                    <input type="checkbox" id="includeTax">
+                                    <span>inkl. Umsatzsteuer (19%)</span>
+                                </label>
+                            </div>
                             
                             <div class="form-group">
                                 <label for="paymentMethod">Zahlungsmethode</label>
