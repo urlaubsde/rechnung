@@ -12,39 +12,31 @@
 </head>
 <body>
 
-    <div class="app-layout sidebar-hidden">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h1 class="logo">Rechnung Pro</h1>
-            </div>
-            <nav class="main-nav">
-                <a href="#" id="navInvoices" class="nav-link">
-                    <i data-lucide="file-plus-2"></i>
-                    <span>Rechnungserstellung</span>
-                </a>
-                <a href="#" id="navSavedInvoices" class="nav-link active">
-                    <i data-lucide="archive"></i>
-                    <span>Gespeicherte Rechnungen</span>
-                </a>
-                <a href="#" id="navCustomers" class="nav-link">
-                    <i data-lucide="users"></i>
-                    <span>Kunden</span>
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
-                    <i data-lucide="moon" class="icon-dark"></i>
-                    <i data-lucide="sun" class="icon-light"></i>
-                </button>
-            </div>
-        </aside>
+    <div id="toast-container"></div>
+
+    <div class="app-layout">
+        <nav class="bottom-nav">
+            <a href="#" id="navInvoices" class="nav-link">
+                <i data-lucide="file-plus-2"></i>
+                <span>Rechnungserstellung</span>
+            </a>
+            <a href="#" id="navSavedInvoices" class="nav-link active">
+                <i data-lucide="archive"></i>
+                <span>Gespeicherte Rechnungen</span>
+            </a>
+            <a href="#" id="navCustomers" class="nav-link">
+                <i data-lucide="users"></i>
+                <span>Kunden</span>
+            </a>
+            <a href="#" id="navCalculator" class="nav-link">
+                <i data-lucide="percent-circle"></i>
+                <span>Rechner</span>
+            </a>
+        </nav>
 
         <main class="main-content">
             <header class="main-header">
                 <div class="header-start">
-                    <button class="btn btn-icon" id="toggleSidebarBtn" title="Navigation umschalten">
-                        <i data-lucide="menu"></i>
-                    </button>
                     <h2 id="page-title">Gespeicherte Rechnungen</h2>
                 </div>
                 <div class="header-actions">
@@ -53,6 +45,10 @@
                     <button class="btn btn-secondary" id="saveInvoice"><i data-lucide="save"></i><span>Speichern</span></button>
                     <button class="btn btn-secondary" id="printPDF"><i data-lucide="printer"></i><span>Drucken</span></button>
                     <button class="btn btn-primary" id="downloadPDF"><i data-lucide="download"></i><span>PDF Download</span></button>
+                    <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
+                        <i data-lucide="moon" class="icon-dark"></i>
+                        <i data-lucide="sun" class="icon-light"></i>
+                    </button>
                 </div>
             </header>
 
@@ -151,19 +147,6 @@ Kundenstraße 2
                         <div class="card-header"><h3>Notizen & Zahlungsinformationen</h3></div>
                         <div class="card-content">
                             <div class="form-group"><label for="note">Notiz</label><textarea id="note" rows="3">Vielen Dank für Ihre Buchung!</textarea></div>
-                            <div class="form-group">
-                                <label for="invoiceType">Rechnungstyp</label>
-                                <select id="invoiceType">
-                                    <option value="flight">Flugrechnung</option>
-                                    <option value="standard">Standardrechnung</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="inline-label">
-                                    <input type="checkbox" id="includeTax">
-                                    <span>inkl. Umsatzsteuer (19%)</span>
-                                </label>
-                            </div>
                             
                             <div class="form-group">
                                 <label for="paymentMethod">Zahlungsmethode</label>
@@ -264,6 +247,46 @@ Verwendungszweck: Rechnungsnummer</textarea>
                         </div>
                     </div>
                 </div>
+
+                <div id="pageCalculator" class="page" style="display: none;">
+                    <div class="card calculator-card">
+                        <div class="card-content">
+                            <div class="calculator-input-wrapper">
+                                <label for="calcInput">أدخل الرقم هنا</label>
+                                <input type="number" id="calcInput" placeholder="0">
+                                <button id="clearCalcInput" class="btn btn-icon danger" style="display: none;" title="مسح الإدخال">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </div>
+
+                            <div id="calcResultWrapper" class="calculator-result-wrapper" style="display: none;">
+                                <h4>النتيجة النهائية</h4>
+                                <div class="result-value-container">
+                                    <span id="calcResult">0.00</span>
+                                    <button id="copyCalcResult" class="btn btn-icon" title="نسخ النتيجة">
+                                        <i data-lucide="copy"></i>
+                                    </button>
+                                </div>
+                                <small id="calcPercentageNote"></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>إعدادات النسب المئوية</h3>
+                        </div>
+                        <div class="card-content">
+                            <div id="percentageSettingsGrid" class="percentage-grid">
+                                <!-- JS will generate this -->
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button id="resetPercentages" class="btn btn-secondary"><i data-lucide="rotate-cw"></i>إعادة ضبط القيم</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             
             <aside class="preview-pane" style="display: none;">
@@ -285,10 +308,7 @@ Verwendungszweck: Rechnungsnummer</textarea>
         // Icons initialisieren
         lucide.createIcons();
 
-        // --- SCRIPT FIX STARTS HERE ---
-        
         // UI-Logik für Navigation
-        const appLayout = document.querySelector('.app-layout'); // Moved definition to top
         const navLinks = document.querySelectorAll('.nav-link');
         const pageTitle = document.getElementById('page-title');
         
@@ -300,22 +320,9 @@ Verwendungszweck: Rechnungsnummer</textarea>
                 
                 const titleText = e.currentTarget.querySelector('span').textContent.trim();
                 pageTitle.textContent = titleText;
-
-                // ADDED: Hide sidebar on mobile after clicking a link for better UX
-                if (appLayout && window.innerWidth <= 1200) {
-                    appLayout.classList.add('sidebar-hidden');
-                }
+                lucide.createIcons(); // Re-render icons on navigation
             });
         });
-
-        // Sidebar Toggle
-        const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
-        if (toggleSidebarBtn && appLayout) {
-            toggleSidebarBtn.addEventListener('click', () => {
-                appLayout.classList.toggle('sidebar-hidden');
-            });
-        }
-        // --- SCRIPT FIX ENDS HERE ---
     </script>
 </body>
 </html>
