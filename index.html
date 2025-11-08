@@ -16,13 +16,17 @@
 
     <div class="app-layout">
         <nav class="bottom-nav">
-            <a href="#" id="navInvoices" class="nav-link">
-                <i data-lucide="file-plus-2"></i>
-                <span>Rechnungserstellung</span>
+            <a href="#" id="navHome" class="nav-link active">
+                <i data-lucide="home"></i>
+                <span>Startseite</span>
             </a>
-            <a href="#" id="navSavedInvoices" class="nav-link active">
+            <a href="#" id="navSavedInvoices" class="nav-link">
                 <i data-lucide="archive"></i>
                 <span>Gespeicherte Rechnungen</span>
+            </a>
+            <a href="#" id="navReminders" class="nav-link">
+                <i data-lucide="bell"></i>
+                <span>Erinnerungen</span>
             </a>
             <a href="#" id="navCustomers" class="nav-link">
                 <i data-lucide="users"></i>
@@ -37,7 +41,7 @@
         <main class="main-content">
             <header class="main-header">
                 <div class="header-start">
-                    <h2 id="page-title">Gespeicherte Rechnungen</h2>
+                    <h2 id="page-title">Startseite</h2>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-secondary" id="togglePreviewBtn"><i data-lucide="eye"></i><span>Vorschau Umschalten</span></button>
@@ -45,6 +49,22 @@
                     <button class="btn btn-secondary" id="saveInvoice"><i data-lucide="save"></i><span>Speichern</span></button>
                     <button class="btn btn-secondary" id="printPDF"><i data-lucide="printer"></i><span>Drucken</span></button>
                     <button class="btn btn-primary" id="downloadPDF"><i data-lucide="download"></i><span>PDF Download</span></button>
+                    <button class="btn btn-icon" id="reminderNotificationBtn" title="Erinnerungen">
+                        <i data-lucide="bell"></i>
+                        <span id="reminderCount" class="notification-badge">0</span>
+                    </button>
+                    <div id="reminderNotificationDropdown" class="notification-dropdown">
+                        <div class="notification-header">
+                            <h4>Aktuelle Erinnerungen</h4>
+                            <button class="btn btn-icon btn-sm" id="closeReminderDropdown"><i data-lucide="x"></i></button>
+                        </div>
+                        <div id="notificationRemindersList" class="notification-list">
+                            <!-- Reminders will be loaded here by JS -->
+                        </div>
+                        <div class="notification-footer">
+                            <button class="btn btn-text" id="goToRemindersPage">Alle Erinnerungen anzeigen</button>
+                        </div>
+                    </div>
                     <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
                         <i data-lucide="moon" class="icon-dark"></i>
                         <i data-lucide="sun" class="icon-light"></i>
@@ -53,6 +73,10 @@
             </header>
 
             <div class="page-container">
+                <div id="pageHome" class="page" style="display: flex;">
+                    <!-- Content for unpaid invoices will be rendered here by JS -->
+                </div>
+
                 <div id="pageInvoices" class="page" style="display: none;">
                     <div class="card">
                         <div class="card-header"><h3>Grunddaten</h3></div>
@@ -248,6 +272,37 @@ Verwendungszweck: Rechnungsnummer</textarea>
                     </div>
                 </div>
 
+                <div id="pageReminders" class="page" style="display: none;">
+                    <div class="card">
+                        <div class="card-header"><h3>Neue Erinnerung</h3></div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="reminderText">Erinnerungstext</label>
+                                <input type="text" id="reminderText" placeholder="Zahlung für Rechnung #123 prüfen">
+                            </div>
+                            <div class="form-group">
+                                <label for="reminderDate">Datum</label>
+                                <input type="date" id="reminderDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="reminderTime">Uhrzeit</label>
+                                <input type="time" id="reminderTime">
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-primary" id="addReminderBtn"><i data-lucide="plus"></i>Erinnerung hinzufügen</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>Meine Erinnerungen</h3></div>
+                        <div class="card-content">
+                            <div id="remindersList" class="customer-list">
+                                <!-- Reminders will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="pageCalculator" class="page" style="display: none;">
                     <div class="card calculator-card">
                         <div class="card-content">
@@ -289,15 +344,12 @@ Verwendungszweck: Rechnungsnummer</textarea>
 
             </div>
             
-            <aside class="preview-pane" style="display: none;">
-                <h2 class="preview-title">Live-Vorschau</h2>
-                <div id="preview-wrapper">
-                    <div id="preview"></div>
-                </div>
-            </aside>
-
         </main>
     </div>
+
+    <button class="btn-fab" id="fabNewInvoice" title="Neue Rechnung erstellen">
+        <i data-lucide="plus"></i>
+    </button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
