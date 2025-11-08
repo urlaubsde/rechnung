@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         applyTheme('light');
     }
-    showPage('saved'); // Geändert: Startseite ist jetzt 'saved'
+    showPage('home'); // Geändert: Startseite ist jetzt 'home'
 });
 
 
@@ -41,26 +41,48 @@ function format(n){return Number(n||0).toLocaleString('de-DE',{minimumFractionDi
 function toNum(v){return parseFloat(String(v).replace(",", "."))||0}
 
 // --- SEITENNAVIGATION ---
+const pageHome = document.getElementById('pageHome');
 const pageInvoices = document.getElementById('pageInvoices');
 const pageSavedInvoices = document.getElementById('pageSavedInvoices');
 const pageCustomers = document.getElementById('pageCustomers');
 const pageCalculator = document.getElementById('pageCalculator'); // New Calculator Page
+const pageReminders = document.getElementById('pageReminders'); // New Reminders Page
 const navButtons = {
-  invoices: document.getElementById('navInvoices'),
+  home: document.getElementById('navHome'),
   saved: document.getElementById('navSavedInvoices'),
   customers: document.getElementById('navCustomers'),
   calculator: document.getElementById('navCalculator'), // New Calculator Nav Button
+  reminders: document.getElementById('navReminders'), // New Reminders Nav Button
 };
+
+const invoiceActionButtons = [
+    document.getElementById('togglePreviewBtn'),
+    document.getElementById('updatePreviewBtn'),
+    document.getElementById('saveInvoice'),
+    document.getElementById('printPDF'),
+    document.getElementById('downloadPDF')
+].filter(Boolean);
 
 function showPage(pageId) {
   // Verstecke alle Seiten
+  if(pageHome) pageHome.style.display = 'none';
   if(pageInvoices) pageInvoices.style.display = 'none';
   if(pageSavedInvoices) pageSavedInvoices.style.display = 'none';
   if(pageCustomers) pageCustomers.style.display = 'none';
   if(pageCalculator) pageCalculator.style.display = 'none'; // Hide calculator
+  if(pageReminders) pageReminders.style.display = 'none'; // Hide reminders
+
+  // Show/hide invoice action buttons
+  const isInvoicePage = pageId === 'invoices' || (!pageId && pageInvoices);
+  invoiceActionButtons.forEach(btn => {
+      btn.style.display = isInvoicePage ? 'inline-flex' : 'none';
+  });
 
   // Zeige die ausgewählte Seite an
-  if (pageId === 'saved' && pageSavedInvoices) {
+  if (pageId === 'home' && pageHome) {
+    pageHome.style.display = 'grid'; // Use grid for the home page layout
+    renderUnpaidInvoices();
+  } else if (pageId === 'saved' && pageSavedInvoices) {
     pageSavedInvoices.style.display = 'flex'; // Use flex for new layout
     renderSavedInvoices();
   } else if (pageId === 'customers' && pageCustomers) {
@@ -68,14 +90,32 @@ function showPage(pageId) {
     renderCustomerList();
   } else if (pageId === 'calculator' && pageCalculator) {
     pageCalculator.style.display = 'flex'; // Show calculator
+  } else if (pageId === 'reminders' && pageReminders) {
+    pageReminders.style.display = 'flex'; // Show reminders
+    renderReminders(); // Render reminders when the page is shown
   } else { // Standardfall ist 'invoices'
     if(pageInvoices) pageInvoices.style.display = 'flex'; // Use flex for new layout
   }
 }
-if(navButtons.invoices) navButtons.invoices.onclick = () => showPage('invoices');
+if(navButtons.home) navButtons.home.onclick = () => showPage('home');
 if(navButtons.saved) navButtons.saved.onclick = () => showPage('saved');
 if(navButtons.customers) navButtons.customers.onclick = () => showPage('customers');
 if(navButtons.calculator) navButtons.calculator.onclick = () => showPage('calculator'); // New event listener
+if(navButtons.reminders) navButtons.reminders.onclick = () => showPage('reminders'); // New event listener
+
+const fabNewInvoice = document.getElementById('fabNewInvoice');
+if(fabNewInvoice) {
+    fabNewInvoice.onclick = () => {
+        showPage('invoices');
+        // Update title and nav active state
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Rechnungserstellung';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+    };
+}
 
 const selectCustomerBtn = document.getElementById('selectCustomerBtn');
 if(selectCustomerBtn) selectCustomerBtn.onclick = () => showPage('customers');
@@ -864,6 +904,73 @@ if(saveInvoiceBtn) saveInvoiceBtn.onclick = ()=>{
 
 
 // --- NEUE FUNKTIONEN FÜR RECHNUNGSVERWALTUNG ---
+
+function renderUnpaidInvoices() {
+    if (!pageHome) return;
+
+    const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+    const unpaidInvoices = invoices.filter(inv => inv.status === 'Unbezahlt' && inv.date);
+
+    // Sort by date, oldest first
+    unpaidInvoices.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (unpaidInvoices.length === 0) {
+        pageHome.innerHTML = '<div class="card" style="grid-column: 1 / -1;"><div class="card-content" style="text-align: center;">Keine unbezahlten Rechnungen gefunden. Gut gemacht!</div></div>';
+        return;
+    }
+
+    pageHome.innerHTML = unpaidInvoices.map(inv => {
+        const total = getInvoiceTotal(inv);
+        const invoiceDate = new Date(inv.date);
+        const today = new Date();
+        const daysOld = Math.floor((today - invoiceDate) / (1000 * 60 * 60 * 24));
+
+        let level = 1;
+        if (daysOld >= 61) level = 5;
+        else if (daysOld >= 31) level = 4;
+        else if (daysOld >= 15) level = 3;
+        else if (daysOld >= 8) level = 2;
+
+        return `
+            <div class="card unpaid-invoice-card unpaid-level-${level}" data-id="${inv.number}">
+                <div class="card-content">
+                    <div class="unpaid-invoice-card-header">
+                        <span>${escapeHtml(inv.number)}</span>
+                        <span class="date">${escapeHtml(inv.date)} (${daysOld} Tage)</span>
+                    </div>
+                    <div class="unpaid-invoice-card-body">
+                        <div class="amount">${format(total)} €</div>
+                        <h4 class="customer">${escapeHtml((inv.to || '').split('\n')[0])}</h4>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-secondary load-inv" title="Laden"><i data-lucide="edit"></i>Laden</button>
+                    <button class="btn btn-secondary pdf-inv" title="PDF anzeigen"><i data-lucide="file-text"></i>PDF</button>
+                    <button class="btn btn-icon danger delete-inv" title="Löschen"><i data-lucide="trash-2"></i></button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // Attach event listeners
+    pageHome.querySelectorAll('.load-inv').forEach(b => b.onclick = (e) => { loadInvoice(e.currentTarget.closest('.card').dataset.id); showPage('invoices'); });
+    pageHome.querySelectorAll('.pdf-inv').forEach(b => b.onclick = (e) => loadInvoiceAndDownload(e.currentTarget.closest('.card').dataset.id));
+    pageHome.querySelectorAll('.delete-inv').forEach(b => {
+        b.onclick = (e) => {
+            const number = e.currentTarget.closest('.card').dataset.id;
+            if (confirm(`Soll die Rechnung ${number} wirklich gelöscht werden?`)) {
+                let allInvoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+                allInvoices = allInvoices.filter(i => i.number !== number);
+                localStorage.setItem('invoices', JSON.stringify(allInvoices));
+                renderUnpaidInvoices(); // Re-render the home page
+            }
+        };
+    });
+}
+
+
 function getInvoiceTotal(invoice) {
     return (invoice.items || []).reduce((sum, item) => sum + (toNum(item.qty) * toNum(item.price)), 0);
 }
@@ -1328,4 +1435,208 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setupCalculator();
+});
+
+
+// --- REMINDER LOGIC ---
+const reminderTextEl = document.getElementById('reminderText');
+const reminderDateEl = document.getElementById('reminderDate');
+const reminderTimeEl = document.getElementById('reminderTime');
+const addReminderBtn = document.getElementById('addReminderBtn');
+const remindersListEl = document.getElementById('remindersList');
+
+// Notification elements
+const reminderNotificationBtn = document.getElementById('reminderNotificationBtn');
+const reminderCountEl = document.getElementById('reminderCount');
+const reminderNotificationDropdown = document.getElementById('reminderNotificationDropdown');
+const notificationRemindersListEl = document.getElementById('notificationRemindersList');
+const closeReminderDropdownBtn = document.getElementById('closeReminderDropdown');
+const goToRemindersPageBtn = document.getElementById('goToRemindersPage');
+
+
+function getReminders() {
+    return JSON.parse(localStorage.getItem('reminders') || '[]');
+}
+
+function saveReminders(reminders) {
+    localStorage.setItem('reminders', JSON.stringify(reminders));
+    updateReminderNotification(); // Update notification when reminders change
+}
+
+function renderReminders() {
+    if (!remindersListEl) return;
+
+    const reminders = getReminders().sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`);
+        const dateB = new Date(`${b.date}T${b.time}`);
+        return dateA - dateB;
+    });
+
+    if (reminders.length === 0) {
+        remindersListEl.innerHTML = '<p>Keine Erinnerungen vorhanden.</p>';
+        return;
+    }
+
+    remindersListEl.innerHTML = reminders.map(rem => `
+        <div class="saved-inv ${rem.completed ? 'completed-reminder' : ''}" data-id="${rem.id}">
+            <div>
+                <b>${escapeHtml(rem.text)}</b><br>
+                <small>${escapeHtml(rem.date)} ${escapeHtml(rem.time)}</small>
+            </div>
+            <div class="card-actions">
+                <button class="btn btn-icon ${rem.completed ? 'btn-secondary' : 'btn-primary'} toggle-complete-reminder" data-id="${rem.id}" title="${rem.completed ? 'Als unerledigt markieren' : 'Als erledigt markieren'}">
+                    <i data-lucide="${rem.completed ? 'rotate-ccw' : 'check'}"></i>
+                </button>
+                <button class="btn btn-icon danger delete-reminder" data-id="${rem.id}" title="Erinnerung löschen">
+                    <i data-lucide="trash-2"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    if (window.lucide) window.lucide.createIcons();
+
+    remindersListEl.querySelectorAll('.delete-reminder').forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.currentTarget.dataset.id;
+            if (confirm('Soll diese Erinnerung wirklich gelöscht werden?')) {
+                let currentReminders = getReminders();
+                currentReminders = currentReminders.filter(rem => rem.id !== id);
+                saveReminders(currentReminders);
+                renderReminders();
+            }
+        };
+    });
+
+    remindersListEl.querySelectorAll('.toggle-complete-reminder').forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.currentTarget.dataset.id;
+            let currentReminders = getReminders();
+            const index = currentReminders.findIndex(rem => rem.id === id);
+            if (index > -1) {
+                currentReminders[index].completed = !currentReminders[index].completed;
+                saveReminders(currentReminders);
+                renderReminders();
+            }
+        };
+    });
+}
+
+if (addReminderBtn) {
+    addReminderBtn.onclick = () => {
+        const text = reminderTextEl.value.trim();
+        const date = reminderDateEl.value;
+        const time = reminderTimeEl.value;
+
+        if (!text || !date || !time) {
+            alert('Bitte füllen Sie alle Felder aus.');
+            return;
+        }
+
+        const newReminder = {
+            id: `rem_${Date.now()}`,
+            text,
+            date,
+            time,
+            completed: false
+        };
+
+        const currentReminders = getReminders();
+        currentReminders.push(newReminder);
+        saveReminders(currentReminders);
+
+        reminderTextEl.value = '';
+        reminderDateEl.value = '';
+        reminderTimeEl.value = '';
+        renderReminders();
+        showToast('Erinnerung hinzugefügt!');
+    };
+}
+
+function updateReminderNotification() {
+    if (!reminderCountEl || !notificationRemindersListEl) return;
+
+    const allReminders = getReminders();
+    const activeReminders = allReminders.filter(rem => !rem.completed);
+
+    reminderCountEl.textContent = activeReminders.length;
+    if (activeReminders.length > 0) {
+        reminderCountEl.style.display = 'flex'; // Show badge
+    } else {
+        reminderCountEl.style.display = 'none'; // Hide badge
+    }
+
+    if (activeReminders.length === 0) {
+        notificationRemindersListEl.innerHTML = '<p class="no-reminders">Keine ausstehenden Erinnerungen.</p>';
+    } else {
+        notificationRemindersListEl.innerHTML = activeReminders.slice(0, 5).map(rem => `
+            <div class="notification-item" data-id="${rem.id}">
+                <div class="notification-item-text">
+                    <b>${escapeHtml(rem.text)}</b>
+                    <small>${escapeHtml(rem.date)} ${escapeHtml(rem.time)}</small>
+                </div>
+                <button class="btn btn-icon btn-sm toggle-complete-reminder-notification" data-id="${rem.id}" title="Als erledigt markieren">
+                    <i data-lucide="check"></i>
+                </button>
+            </div>
+        `).join('');
+
+        notificationRemindersListEl.querySelectorAll('.toggle-complete-reminder-notification').forEach(btn => {
+            btn.onclick = (e) => {
+                const id = e.currentTarget.dataset.id;
+                let currentReminders = getReminders();
+                const index = currentReminders.findIndex(rem => rem.id === id);
+                if (index > -1) {
+                    currentReminders[index].completed = true;
+                    saveReminders(currentReminders);
+                    renderReminders(); // Re-render the main reminders page as well
+                }
+            };
+        });
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// Event listeners for notification dropdown
+if (reminderNotificationBtn) {
+    reminderNotificationBtn.onclick = (e) => {
+        e.stopPropagation(); // Prevent document click from closing immediately
+        reminderNotificationDropdown.classList.toggle('show');
+    };
+}
+
+if (closeReminderDropdownBtn) {
+    closeReminderDropdownBtn.onclick = () => {
+        reminderNotificationDropdown.classList.remove('show');
+    };
+}
+
+if (goToRemindersPageBtn) {
+    goToRemindersPageBtn.onclick = () => {
+        showPage('reminders');
+        reminderNotificationDropdown.classList.remove('show');
+        // Update title and nav active state
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Erinnerungen';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+        const navReminders = document.getElementById('navReminders');
+        if (navReminders) navReminders.classList.add('active');
+    };
+}
+
+// Close dropdown if clicked outside
+document.addEventListener('click', (e) => {
+    if (reminderNotificationDropdown && !reminderNotificationDropdown.contains(e.target) && !reminderNotificationBtn.contains(e.target)) {
+        reminderNotificationDropdown.classList.remove('show');
+    }
+});
+
+
+// Initial render for reminders and notifications when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    renderReminders();
+    updateReminderNotification();
 });
