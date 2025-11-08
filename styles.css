@@ -5,7 +5,7 @@
 */
 :root {
     /* Color Palette (Light Mode) */
-    --color-primary-50: #f5f3ff; --color-primary-100: #ede9fe; --color-primary-500: #6d28d9; --color-primary-600: #5b21b6;
+    --color-primary-50: #eef3e7; --color-primary-100: #d8e4bc; --color-primary-500: #556B2F; --color-primary-600: #455725;
     --color-gray-50: #f9fafb; --color-gray-100: #f3f4f6; --color-gray-200: #e5e7eb; --color-gray-400: #9ca3af; --color-gray-600: #4b5563; --color-gray-800: #1f2937; --color-gray-900: #111827;
     --color-white: #ffffff;
     --color-danger-500: #ef4444; --color-danger-600: #dc2626;
@@ -46,7 +46,7 @@ body.dark-mode {
     --text-secondary: var(--color-gray-400);
     --text-label: var(--color-gray-200);
     --border-color: #393843;
-    --focus-ring: rgba(109, 40, 217, 0.3);
+    --focus-ring: rgba(85, 107, 47, 0.3);
 
     --paid-bg-color: rgba(34, 197, 94, 0.1);
     --unpaid-bg-color: rgba(245, 158, 11, 0.1);
@@ -188,11 +188,40 @@ input[type="file"] { background-color: transparent; border: none; padding: 0; }
 .btn-secondary:hover { background-color: var(--bg-hover); border-color: var(--border-color); color: var(--text-primary); }
 .btn-text { color: var(--color-primary-500); background: transparent; }
 .btn-text:hover { background: var(--color-primary-50); }
-body.dark-mode .btn-text:hover { background: rgba(109, 40, 217, 0.2); }
+body.dark-mode .btn-text:hover { background: rgba(85, 107, 47, 0.2); }
 .btn-icon { padding: 0.5rem; }
 .btn.danger { color: var(--color-danger-500); background-color: transparent; }
 .btn.danger:hover { background-color: rgba(239, 68, 68, 0.1); }
 table .btn { padding: 4px; }
+
+/* --- Floating Action Button --- */
+.btn-fab {
+    position: fixed;
+    bottom: 100px; /* Adjust to be above the bottom nav */
+    right: 1.5rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-primary-500);
+    color: var(--color-white);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 105; /* Above other content but below modals if any */
+}
+.btn-fab:hover {
+    background-color: var(--color-primary-600);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+.btn-fab i {
+    width: 28px;
+    height: 28px;
+}
 
 /* --- Tables --- */
 .table-wrapper { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius); }
@@ -222,10 +251,99 @@ tbody tr:last-child td { border-bottom: none; }
 .status-select.paid { border-color: var(--paid-color); color: var(--paid-color); background-color: var(--paid-bg-color); }
 .status-select.unpaid { border-color: var(--unpaid-color); color: var(--unpaid-color); background-color: var(--unpaid-bg-color); }
 
+/* --- Home Page (Startseite) --- */
+#pageHome {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    align-content: flex-start;
+}
+
+.unpaid-invoice-card {
+    border-left-width: 5px;
+    border-left-style: solid;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.unpaid-invoice-card .card-content {
+    flex-grow: 1;
+}
+.unpaid-invoice-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+.unpaid-invoice-card-header .date {
+    font-weight: 500;
+}
+.unpaid-invoice-card-body h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.unpaid-invoice-card-body .amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.unpaid-invoice-card-body .customer {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Unpaid Invoice Color Scale */
+:root {
+    --unpaid-level-1: #fee2e2; /* Red 100 */
+    --unpaid-level-2: #fecaca; /* Red 200 */
+    --unpaid-level-3: #fca5a5; /* Red 300 */
+    --unpaid-level-4: #f87171; /* Red 400 */
+    --unpaid-level-5: #ef4444; /* Red 500 */
+    --unpaid-text-dark: #991b1b; /* Red 800 */
+}
+body.dark-mode {
+    --unpaid-level-1: #3f2222;
+    --unpaid-level-2: #5c2b2b;
+    --unpaid-level-3: #7c3a3a;
+    --unpaid-level-4: #993d3d;
+    --unpaid-level-5: #b94444;
+    --unpaid-text-dark: #fecaca;
+}
+
+.unpaid-level-1 { border-color: var(--unpaid-level-3); background-color: var(--unpaid-level-1); }
+.unpaid-level-2 { border-color: var(--unpaid-level-4); background-color: var(--unpaid-level-2); }
+.unpaid-level-3 { border-color: var(--unpaid-level-5); background-color: var(--unpaid-level-3); }
+.unpaid-level-4 { border-color: var(--unpaid-level-5); background-color: var(--unpaid-level-4); }
+.unpaid-level-5 { border-color: var(--unpaid-text-dark); background-color: var(--unpaid-level-5); }
+
+.unpaid-level-4 *, .unpaid-level-5 * {
+    color: var(--unpaid-text-dark);
+}
+body.dark-mode .unpaid-level-4 *, body.dark-mode .unpaid-level-5 * {
+    color: var(--color-gray-100);
+}
+.unpaid-level-4 .amount, .unpaid-level-5 .amount {
+    color: var(--unpaid-text-dark);
+}
+body.dark-mode .unpaid-level-4 .amount, body.dark-mode .unpaid-level-5 .amount {
+    color: var(--color-white);
+}
+
+
 /* --- Customers Page --- */
 .customer-list { display: flex; flex-direction: column; gap: 1rem; }
 .saved-inv { background-color: var(--bg-app); padding: 1rem 1.5rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
 .saved-inv small { color: var(--text-secondary); }
+
+.completed-reminder {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+.completed-reminder b, .completed-reminder small {
+    color: var(--text-secondary);
+}
 
 
 /* ========== START: NEUE STYLES FÜR GEPÄCK ========== */
@@ -309,16 +427,16 @@ body.dark-mode .baggage-row td {
     box-shadow: 0 0 20px rgba(0,0,0,0.08);
 }
 #preview .logo { width: 120px; height: auto; margin-bottom: 24px; }
-#preview h2 { color: var(--heading-color, #1a237e); font-size: 2.2rem; font-weight: 300; margin: 0 0 8px 0; letter-spacing: 0.5px; text-align: right; }
+#preview h2 { color: var(--heading-color, #455725); font-size: 2.2rem; font-weight: 300; margin: 0 0 8px 0; letter-spacing: 0.5px; text-align: right; }
 #preview pre { font-family: inherit; margin: 0; padding: 0; white-space: pre-wrap; line-height: 1.6; color: #444; }
-#preview h3 { font-size: 0.9rem; font-weight: 600; color: var(--heading-color, #1a237e); text-transform: uppercase; letter-spacing: 1px; margin: 40px 0 16px 0; border-bottom: 2px solid var(--heading-color, #1a237e); padding-bottom: 8px; }
+#preview h3 { font-size: 0.9rem; font-weight: 600; color: var(--heading-color, #455725); text-transform: uppercase; letter-spacing: 1px; margin: 40px 0 16px 0; border-bottom: 2px solid var(--heading-color, #455725); padding-bottom: 8px; }
 #preview ul { list-style: none; padding-left: 0; margin-top: 0; }
 #preview ul li { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
 #preview table { width: 100%; border-collapse: collapse; margin-top: 12px; }
 #preview th, #preview td { text-align: left; padding: 12px; border: none; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
 #preview thead th { font-size: 0.8rem; font-weight: bold; color: #667; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #dcdcdc; background-color: transparent; }
 #preview tbody tr:last-child td { border-bottom: none; }
-#preview tfoot .total-row td { padding: 20px 12px; font-weight: bold; font-size: 1.5rem; color: var(--heading-color, #1a237e); border-top: 2px solid var(--heading-color, #1a237e); background-color: transparent; }
+#preview tfoot .total-row td { padding: 20px 12px; font-weight: bold; font-size: 1.5rem; color: var(--heading-color, #455725); border-top: 2px solid var(--heading-color, #455725); background-color: transparent; }
 #preview .layover-row td { padding: 8px 12px; font-style: normal; font-size: 0.9em; color: #555; background-color: #f9fafb; }
 #preview::before { content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none; background-image: var(--logo-image-url); background-position: center; background-repeat: no-repeat; background-size: var(--logo-size, 100%); opacity: var(--logo-opacity, 0); }
 
@@ -576,4 +694,98 @@ body.dark-mode .toast {
         grid-template-columns: 1fr;
     }
     /* ========== ENDE: NEUE STYLES FÜR GEPÄCK (MOBIL) ========== */
+}
+
+/* --- Reminder Notification Styles --- */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--color-danger-500);
+    color: var(--color-white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 2px;
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 100%; /* Position below the button */
+    right: 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    margin-top: 0.5rem;
+}
+.notification-dropdown.show {
+    display: flex;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.notification-header h4 {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.notification-list {
+    padding: 0.5rem 0;
+}
+
+.notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.notification-item:last-child {
+    border-bottom: none;
+}
+.notification-item:hover {
+    background-color: var(--bg-hover);
+}
+.notification-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.notification-item-text b {
+    font-size: 0.9rem;
+}
+.notification-item-text small {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.notification-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.no-reminders {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
