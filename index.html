@@ -22,19 +22,16 @@
             </a>
             <a href="#" id="navSavedInvoices" class="nav-link">
                 <i data-lucide="archive"></i>
-                <span>Gespeicherte Rechnungen</span>
+                <span>Analyse</span>
             </a>
             <a href="#" id="navReminders" class="nav-link">
                 <i data-lucide="bell"></i>
                 <span>Erinnerungen</span>
             </a>
-            <a href="#" id="navCustomers" class="nav-link">
-                <i data-lucide="users"></i>
-                <span>Kunden</span>
             </a>
-            <a href="#" id="navCalculator" class="nav-link">
-                <i data-lucide="percent-circle"></i>
-                <span>Rechner</span>
+            <a href="#" id="navSettings" class="nav-link">
+                <i data-lucide="settings"></i>
+                <span>Einstellungen</span>
             </a>
         </nav>
 
@@ -65,144 +62,124 @@
                             <button class="btn btn-text" id="goToRemindersPage">Alle Erinnerungen anzeigen</button>
                         </div>
                     </div>
-                    <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
-                        <i data-lucide="moon" class="icon-dark"></i>
-                        <i data-lucide="sun" class="icon-light"></i>
-                    </button>
                 </div>
             </header>
 
             <div class="page-container">
-                <div id="pageHome" class="page" style="display: flex;">
-                    <!-- Content for unpaid invoices will be rendered here by JS -->
+                <div id="pageSettings" class="page" style="display: none;">
+                    <div class="card settings-card">
+                        <div class="card-content">
+                            <h4>Darstellung</h4>
+                            <div class="setting-item dark-mode-toggle-card">
+                                <span>Dunkelmodus</span>
+                                <button class="btn btn-icon" id="darkModeToggle" title="Toggle Dark Mode">
+                                    <i data-lucide="moon" class="icon-dark"></i>
+                                    <i data-lucide="sun" class="icon-light"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New card for Bank Details & Notes -->
+                    <!-- New navigation card for Invoice Settings -->
+                    <div class="card settings-card nav-card" id="navInvoiceSettings">
+                        <div class="card-content">
+                            <h4><i data-lucide="receipt"></i> Einstellungen der Rechnung</h4>
+                        </div>
+                    </div>
+                    <div class="card settings-card nav-card" id="navCalculatorSettings">
+                        <div class="card-content">
+                            <h4><i data-lucide="percent-circle"></i> Einstellungen der Rechner</h4>
+                        </div>
+                    </div>
+                    <div class="card settings-card nav-card" id="navCustomersSettings">
+                        <div class="card-content">
+                            <h4><i data-lucide="users"></i> Kundenverwaltung</h4>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="pageInvoices" class="page" style="display: none;">
-                    <div class="card">
-                        <div class="card-header"><h3>Grunddaten</h3></div>
-                        <div class="card-content grid-2">
-                            <div class="form-group"><label for="invoiceNumber">Rechnungsnummer</label><input id="invoiceNumber"></div>
-                            <div class="form-group"><label for="invoiceDate">Rechnungsdatum</label><input type="date" id="invoiceDate"></div>
-                            <div class="form-group"><label for="from">Von (Reisebüro)</label><textarea id="from">Reisebüro Urlaub
-Salim Al Ahmad
-Hummelsbütteler Markt 19
-22339 Hamburg</textarea></div>
-                            <div class="form-group">
-                                <label for="to">An (Kunde)</label><textarea id="to" placeholder="Name und Adresse des Kunden">Max Mustermann
-Kundenstraße 2
-54321 Kundenstadt</textarea>
-                                <div class="grid-2" style="margin-top: 8px;">
-                                    <div class="form-group"><label for="customerEmail">Kunden-E-Mail</label><input type="email" id="customerEmail" placeholder="max@beispiel.de"></div>
-                                    <div class="form-group"><label for="customerPhone">Kunden-Telefon</label><input type="tel" id="customerPhone" placeholder="+49 123 45678"></div>
+                <div id="pageHome" class="page" style="display: flex;">
+                    <!-- Content for unpaid invoices will be rendered here by JS -->
                                 </div>
-                                <button class="btn btn-text" id="selectCustomerBtn" style="margin-top: 8px;"><i data-lucide="user-search"></i>Kunde aus Datenbank</button>
-                            </div>
-                        </div>
-                    </div>
-                     <div class="card">
-                        <div class="card-header"><h3>Passagiere</h3></div>
-                        <div class="card-content">
-                            <div class="table-wrapper">
-                                <table id="passengerTable">
-                                    <thead><tr><th>Name</th><th>Geburtsdatum</th><th></th></tr></thead>
-                                    <tbody id="passengerBody"></tbody>
-                                </table>
-                            </div>
-                            <div class="card-actions"><button class="btn btn-secondary" id="addPassenger"><i data-lucide="plus"></i>Passagier hinzufügen</button></div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><h3>Flugdetails</h3></div>
-                        <div class="card-content">
-                            <h4>Hinflug</h4>
-                            <div class="form-group"><label for="totalOutboundDuration">Gesamte Reisedauer (Hinflug)</label><input id="totalOutboundDuration" placeholder="Manuelle Eingabe, z.B. 14h 30m"></div>
-                            <div class="table-wrapper">
-                                <table id="outboundTable">
-                                    <thead><tr><th>Von</th><th>Nach</th><th>Abflug</th><th>Ankunft</th><th>Dauer</th><th></th></tr></thead>
-                                    <tbody id="outboundBody"></tbody>
-                                </table>
-                            </div>
-                            <div class="card-actions">
-                                <button class="btn btn-secondary" id="addOutbound"><i data-lucide="plus"></i>Flugabschnitt hinzufügen</button>
-                                <div id="returnSectionContainer"><button class="btn btn-text" id="addReturnSection"><i data-lucide="corner-down-left"></i>Rückflug-Option hinzufügen</button></div>
-                            </div>
-                        </div>
-                    </div>
-                     <div class="card">
-                        <div class="card-header"><h3>Weitere Leistungen</h3></div>
-                        <div class="card-content">
-                            <div class="table-wrapper">
-                                <table id="itemsTable">
-                                    <thead><tr><th>Option</th><th>Beschreibung</th><th class="center">Menge</th><th class="center">Preis</th><th class="center">Gesamt</th><th></th></tr></thead>
-                                    <tbody id="itemsBody"></tbody>
-                                </table>
-                            </div>
-                            <div class="card-actions quick-add">
-                                <button class="btn btn-secondary" id="addItem"><i data-lucide="plus"></i>Leistung hinzufügen</button>
-                                <select id="quickOption"><option value="">--Schnellauswahl--</option><option data-desc="Hotel 7 Nächte">Hotel 7 Nächte</option><option data-desc="Flugticket">Flugticket</option><option data-desc="Gepäck">Gepäck</option><option data-desc="Sonstige">Sonstige</option></select>
-                                <button class="btn btn-primary" id="addQuick">OK</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><h3>Branding & Design (für PDF)</h3></div>
-                        <div class="card-content">
-                             <div class="grid-2">
-                                <div class="form-group"><label>Logo hochladen</label><input type="file" id="logoInput" accept="image/*"></div>
-                                <div class="form-group"><label>Farbe der Überschriften</label><input type="color" id="headingColor" value="#0277bd"></div>
-                            </div>
-                            <fieldset>
-                                <legend>Logo als Seitenhintergrund</legend>
-                                <label class="inline-label"><input type="checkbox" id="bgToggle"> Als Wasserzeichen-Hintergrund verwenden</label>
-                                <div class="form-group"><label>Größe (%)</label><input type="range" id="bgSize" min="10" max="200" value="100"></div>
-                                <div class="form-group"><label>Deckkraft</label><input type="range" id="bgOpacity" min="0" max="1" step="0.01" value="0.15"></div>
-                            </fieldset>
-                             <fieldset>
-                                <legend>Farbiges Overlay</legend>
-                                <div class="grid-2">
-                                    <div class="form-group"><label>Overlay-Farbe</label><input type="color" id="bgColor" value="#ffffff"></div>
-                                    <div class="form-group"><label>Deckkraft Overlay</label><input type="range" id="bgColorOpacity" min="0" max="1" step="0.01" value="0.85"></div>
+                
+                                <div id="pageInvoices" class="page" style="display: none;">
+                                    <div class="card">
+                                        <div class="card-header"><h3>Grunddaten</h3></div>
+                                        <div class="card-content grid-2">
+                                            <div class="form-group"><label for="invoiceNumber">Rechnungsnummer</label><input id="invoiceNumber"></div>
+                                            <div class="form-group"><label for="invoiceDate">Rechnungsdatum</label><input type="date" id="invoiceDate"></div>
+                                            <div class="form-group">
+                                                <label for="to">An (Kunde)</label><textarea id="to" placeholder="Name und Adresse des Kunden">Max Mustermann
+                Kundenstraße 2
+                54321 Kundenstadt</textarea>
+                                                <div class="grid-2" style="margin-top: 8px;">
+                                                    <div class="form-group"><label for="customerEmail">Kunden-E-Mail</label><input type="email" id="customerEmail" placeholder="max@beispiel.de"></div>
+                                                    <div class="form-group"><label for="customerPhone">Kunden-Telefon</label><input type="tel" id="customerPhone" placeholder="+49 123 45678"></div>
+                                                </div>
+                                                <button class="btn btn-text" id="selectCustomerBtn" style="margin-top: 8px;"><i data-lucide="user-search"></i>Kunde aus Datenbank</button>
+                                            </div>
+                                            <div class="form-group" style="grid-column: 1 / -1;"><label>Logo hochladen</label><input type="file" id="logoInput" accept="image/*"></div>
+                                            <div class="form-group" style="grid-column: 1 / -1;">
+                                                <label for="paymentMethod">Zahlungsmethode</label>
+                                                <select id="paymentMethod">
+                                                    <option value="Überweisung">Überweisung</option>
+                                                    <option value="Barzahlung">Barzahlung</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div class="card">
+                                        <div class="card-header"><h3>Passagiere</h3></div>
+                                        <div class="card-content">
+                                            <div class="table-wrapper">
+                                                <table id="passengerTable">
+                                                    <thead><tr><th>Name</th><th>Geburtsdatum</th><th></th></tr></thead>
+                                                    <tbody id="passengerBody"></tbody>
+                                                </table>
+                                            </div>
+                                            <div class="card-actions"><button class="btn btn-secondary" id="addPassenger"><i data-lucide="plus"></i>Passagier hinzufügen</button></div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-header"><h3>Flugdetails</h3></div>
+                                        <div class="card-content">
+                                            <h4>Hinflug</h4>
+                                            <div class="form-group"><label for="totalOutboundDuration">Gesamte Reisedauer (Hinflug)</label><input id="totalOutboundDuration" placeholder="Manuelle Eingabe, z.B. 14h 30m"></div>
+                                            <div class="table-wrapper">
+                                                <table id="outboundTable">
+                                                    <thead><tr><th>Von</th><th>Nach</th><th>Abflug</th><th>Ankunft</th><th>Dauer</th><th></th></tr></thead>
+                                                    <tbody id="outboundBody"></tbody>
+                                                </table>
+                                            </div>
+                                            <div class="card-actions">
+                                                <button class="btn btn-secondary" id="addOutbound"><i data-lucide="plus"></i>Flugabschnitt hinzufügen</button>
+                                                <div id="returnSectionContainer"><button class="btn btn-text" id="addReturnSection"><i data-lucide="corner-down-left"></i>Rückflug-Option hinzufügen</button></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div class="card">
+                                        <div class="card-header"><h3>Weitere Leistungen</h3></div>
+                                        <div class="card-content">
+                                            <div class="table-wrapper">
+                                                <table id="itemsTable">
+                                                    <thead><tr><th>Option</th><th>Beschreibung</th><th class="center">Menge</th><th class="center">Preis</th><th class="center">Gesamt</th><th></th></tr></thead>
+                                                    <tbody id="itemsBody"></tbody>
+                                                </table>
+                                            </div>
+                                            <div class="card-actions quick-add">
+                                                <button class="btn btn-secondary" id="addItem"><i data-lucide="plus"></i>Leistung hinzufügen</button>
+                                                <select id="quickOption"><option value="">--Schnellauswahl--</option><option data-desc="Hotel 7 Nächte">Hotel 7 Nächte</option><option data-desc="Flugticket">Flugticket</option><option data-desc="Gepäck">Gepäck</option><option data-desc="Sonstige">Sonstige</option></select>
+                                                <button class="btn btn-primary" id="addQuick">OK</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="preview-pane" style="display: none;">
+                                        <div id="preview" class="pdf-preview">
+                                            <!-- PDF content will be rendered here -->
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-actions"><button class="btn btn-text" id="clearBg">Hintergrund zurücksetzen</button></div>
-                            </fieldset>
-                        </div>
-                    </div>
-                     <div class="card">
-                        <div class="card-header"><h3>Notizen & Zahlungsinformationen</h3></div>
-                        <div class="card-content">
-                            <div class="form-group"><label for="note">Notiz</label><textarea id="note" rows="3">Vielen Dank für Ihre Buchung!</textarea></div>
-                            
-                            <div class="form-group">
-                                <label for="paymentMethod">Zahlungsmethode</label>
-                                <select id="paymentMethod">
-                                    <option value="Überweisung">Überweisung (حوالة بنكية)</option>
-                                    <option value="Barzahlung">Barzahlung (دفع كاش)</option>
-                                </select>
-                            </div>
-                    
-                            <div class="form-group" id="bankDetails">
-                                <label for="payment">Zahlungsinformationen (für Überweisung)</label>
-                                <textarea id="payment" rows="6">Bitte überweisen Sie den Betrag innerhalt von 14 Tagen auf folgendes Konto:
-Name: SALIM AL AHMAD
-IBAN: DE53 1001 1001 2991 8515 34
-BIC: NTSBDEB1XXX
-Bank: N26
-Verwendungszweck: Rechnungsnummer</textarea>
-                            </div>
-                        </div>
-                    </div>
-                     <div class="card">
-                        <div class="card-header"><h3>Seriennummer-Einstellungen</h3></div>
-                        <div class="card-content">
-                            <label class="inline-label"><input type="checkbox" id="enableSequence" checked> Automatische Seriennummer</label>
-                            <div class="grid-2">
-                                <div class="form-group"><label>Präfix</label><input id="sequencePrefix" value="U2025-"></div>
-                                <div class="form-group"><label>Startnummer</label><input type="number" id="sequenceStart" value="1" min="1"></div>
-                            </div>
-                        </div>
-                        <div class="card-actions"><button class="btn btn-text" id="resetSequence">Sequenz zurücksetzen</button></div>
-                    </div>
-                </div>
 
                 <div id="pageSavedInvoices" class="page" style="display: none;">
                     <div class="summary-stats">
@@ -274,27 +251,50 @@ Verwendungszweck: Rechnungsnummer</textarea>
 
                 <div id="pageReminders" class="page" style="display: none;">
                     <div class="card">
-                        <div class="card-header"><h3>Neue Erinnerung</h3></div>
+                        <div class="card-header"><h3>Neuer Eintrag</h3></div>
                         <div class="card-content">
                             <div class="form-group">
-                                <label for="reminderText">Erinnerungstext</label>
+                                <label>Eintragstyp</label>
+                                <div class="radio-group">
+                                    <label><input type="radio" name="entryType" value="Erinnerung" checked> Erinnerung</label>
+                                    <label><input type="radio" name="entryType" value="Aufgabe"> Aufgabe</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="reminderText">Titel</label>
                                 <input type="text" id="reminderText" placeholder="Zahlung für Rechnung #123 prüfen">
                             </div>
                             <div class="form-group">
-                                <label for="reminderDate">Datum</label>
-                                <input type="date" id="reminderDate">
+                                <label for="reminderNote">Notiz</label>
+                                <textarea id="reminderNote" placeholder="Zusätzliche Details oder Anweisungen" rows="3"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label for="reminderTime">Uhrzeit</label>
-                                <input type="time" id="reminderTime">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="reminderDate">Fälligkeitsdatum</label>
+                                    <input type="date" id="reminderDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="reminderTime">Fälligkeitszeit</label>
+                                    <input type="time" id="reminderTime">
+                                </div>
                             </div>
+                            <fieldset>
+                                <legend>Benachrichtigungen</legend>
+                                <div id="notificationRulesContainer" class="notification-rules-container">
+                                    <!-- Dynamische Benachrichtigungsregeln werden hier eingefügt -->
+                                </div>
+                                <div class="card-actions" style="margin-top: 0;">
+                                    <button class="btn btn-secondary" id="addNotificationRuleBtn"><i data-lucide="bell-plus"></i>Benachrichtigung hinzufügen</button>
+                                </div>
+                            </fieldset>
                             <div class="card-actions">
-                                <button class="btn btn-primary" id="addReminderBtn"><i data-lucide="plus"></i>Erinnerung hinzufügen</button>
+                                <button class="btn btn-primary" id="addReminderBtn"><i data-lucide="plus"></i>Eintrag hinzufügen</button>
+                                <button class="btn btn-text" id="cancelEditReminderBtn" style="display: none;"><i data-lucide="x"></i>Abbrechen</button>
                             </div>
                         </div>
                     </div>
                     <div class="card">
-                        <div class="card-header"><h3>Meine Erinnerungen</h3></div>
+                        <div class="card-header"><h3>Meine Einträge</h3></div>
                         <div class="card-content">
                             <div id="remindersList" class="customer-list">
                                 <!-- Reminders will be rendered here -->
@@ -307,18 +307,18 @@ Verwendungszweck: Rechnungsnummer</textarea>
                     <div class="card calculator-card">
                         <div class="card-content">
                             <div class="calculator-input-wrapper">
-                                <label for="calcInput">أدخل الرقم هنا</label>
+                                <label for="calcInput">Zahl eingeben</label>
                                 <input type="number" id="calcInput" placeholder="0">
-                                <button id="clearCalcInput" class="btn btn-icon danger" style="display: none;" title="مسح الإدخال">
+                                <button id="clearCalcInput" class="btn btn-icon danger" style="display: none;" title="Eingabe löschen">
                                     <i data-lucide="trash-2"></i>
                                 </button>
                             </div>
 
                             <div id="calcResultWrapper" class="calculator-result-wrapper" style="display: none;">
-                                <h4>النتيجة النهائية</h4>
+                                <h4>Endergebnis</h4>
                                 <div class="result-value-container">
                                     <span id="calcResult">0.00</span>
-                                    <button id="copyCalcResult" class="btn btn-icon" title="نسخ النتيجة">
+                                    <button id="copyCalcResult" class="btn btn-icon" title="Ergebnis kopieren">
                                         <i data-lucide="copy"></i>
                                     </button>
                                 </div>
@@ -326,10 +326,12 @@ Verwendungszweck: Rechnungsnummer</textarea>
                             </div>
                         </div>
                     </div>
+                </div>
 
+                <div id="pageCalculatorSettings" class="page" style="display: none;">
                     <div class="card">
                         <div class="card-header">
-                            <h3>إعدادات النسب المئوية</h3>
+                            <h3>Prozentsatzeinstellungen</h3>
                         </div>
                         <div class="card-content">
                             <div id="percentageSettingsGrid" class="percentage-grid">
@@ -337,19 +339,110 @@ Verwendungszweck: Rechnungsnummer</textarea>
                             </div>
                         </div>
                         <div class="card-actions">
-                            <button id="resetPercentages" class="btn btn-secondary"><i data-lucide="rotate-cw"></i>إعادة ضبط القيم</button>
+                            <button id="resetPercentages" class="btn btn-secondary"><i data-lucide="rotate-cw"></i>Werte zurücksetzen</button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- New page for Invoice Settings -->
+                <div id="pageInvoiceSettings" class="page" style="display: none;">
+                    <div class="card">
+                        <div class="card-header"><h3>Notizen & Zahlungsinformationen</h3></div>
+                        <div class="card-content">
+                            <div class="form-group"><label for="from">Von (Reisebüro)</label><textarea id="from">Reisebüro Urlaub
+Salim Al Ahmad
+Hummelsbütteler Markt 19
+22339 Hamburg</textarea></div>
+                            <div class="form-group"><label for="note">Notiz</label><textarea id="note" rows="3">Vielen Dank für Ihre Buchung!</textarea></div>
+                            
+                            <div class="form-group" id="bankDetails">
+                                <label for="payment">Zahlungsinformationen (für Überweisung)</label>
+                                <textarea id="payment" rows="6">Bitte überweisen Sie den Betrag innerhalt von 14 Tagen auf folgendes Konto:
+Name: SALIM AL AHMAD
+IBAN: DE53 1001 1001 2991 8515 34
+BIC: NTSBDEB1XXX
+Bank: N26
+Verwendungszweck: Rechnungsnummer</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactEmail">E-Mail für Fußzeile</label>
+                                <input type="email" id="contactEmail" value="urlaubsde@gmail.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactPhone">Telefon für Fußzeile</label>
+                                <input type="tel" id="contactPhone" value="+4917664957576">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>Branding & Design (für PDF)</h3></div>
+                        <div class="card-content">
+                             <div class="grid-2">
+                                <div class="form-group"><label>Farbe der Überschriften</label><input type="color" id="headingColor" value="#0277bd"></div>
+                            </div>
+                            <fieldset>
+                                <legend>Logo als Seitenhintergrund</legend>
+                                <label class="inline-label"><input type="checkbox" id="bgToggle"> Als Wasserzeichen-Hintergrund verwenden</label>
+                                <div class="form-group"><label>Größe (%)</label><input type="range" id="bgSize" min="10" max="200" value="100"></div>
+                                <div class="form-group"><label>Deckkraft</label><input type="range" id="bgOpacity" min="0" max="1" step="0.01" value="0.15"></div>
+                            </fieldset>
+                             <fieldset>
+                                <legend>Farbiges Overlay</legend>
+                                <div class="grid-2">
+                                    <div class="form-group"><label>Overlay-Farbe</label><input type="color" id="bgColor" value="#ffffff"></div>
+                                    <div class="form-group"><label>Deckkraft Overlay</label><input type="range" id="bgColorOpacity" min="0" max="1" step="0.01" value="0.85"></div>
+                                </div>
+                                <div class="card-actions"><button class="btn btn-text" id="clearBg">Hintergrund zurücksetzen</button></div>
+                            </fieldset>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>Seriennummer-Einstellungen</h3></div>
+                        <div class="card-content">
+                            <label class="inline-label"><input type="checkbox" id="enableSequence" checked> Automatische Seriennummer</label>
+                            <div class="grid-2">
+                                <div class="form-group"><label>Präfix</label><input id="sequencePrefix" value="UR2025-"></div>
+                                <div class="form-group"><label>Startnummer</label><input type="number" id="sequenceStart" value="1" min="1"></div>
+                            </div>
+                        </div>
+                        <div class="card-actions"><button class="btn btn-text" id="resetSequence">Sequenz zurücksetzen</button></div>
+                    </div>
+                    <div class="card-actions" style="justify-content: flex-end;">
+                        <button class="btn btn-primary" id="saveInvoiceSettings"><i data-lucide="save"></i>Einstellungen speichern</button>
                     </div>
                 </div>
 
             </div>
             
         </main>
+        <div class="preview-pane" style="display: none;">
+            <div id="preview" class="pdf-preview">
+                <!-- PDF content will be rendered here -->
+            </div>
+        </div>
     </div>
 
     <button class="btn-fab" id="fabNewInvoice" title="Neue Rechnung erstellen">
         <i data-lucide="plus"></i>
     </button>
+
+    <div class="fab-dropdown" id="fabDropdown">
+        <div class="card nav-card" id="dropdownNewInvoice">
+            <div class="card-content">
+                <h4><i data-lucide="file-plus"></i> Neue Rechnung erstellen</h4>
+            </div>
+        </div>
+        <div class="card nav-card" id="dropdownCalculator">
+            <div class="card-content">
+                <h4><i data-lucide="percent-circle"></i> Rechner</h4>
+            </div>
+        </div>
+        <div class="card nav-card" id="dropdownCustomers">
+            <div class="card-content">
+                <h4><i data-lucide="users"></i> Kundenverwaltung</h4>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
