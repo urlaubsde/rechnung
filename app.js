@@ -24,12 +24,12 @@ darkModeToggle.addEventListener('click', () => {
 // Initiales Theme beim Laden der Seite setzen
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; // No longer needed for default
+
     if (savedTheme) {
         applyTheme(savedTheme);
-    } else if (prefersDark) {
-        applyTheme('dark');
     } else {
+        // Default to light mode if no theme is saved, regardless of system preference
         applyTheme('light');
     }
     showPage('home'); // Geändert: Startseite ist jetzt 'home'
@@ -47,13 +47,16 @@ const pageSavedInvoices = document.getElementById('pageSavedInvoices');
 const pageCustomers = document.getElementById('pageCustomers');
 const pageCalculator = document.getElementById('pageCalculator'); // New Calculator Page
 const pageReminders = document.getElementById('pageReminders'); // New Reminders Page
+const pageSettings = document.getElementById('pageSettings'); // New Settings Page
+const pageInvoiceSettings = document.getElementById('pageInvoiceSettings'); // New Invoice Settings Page
+const pageCalculatorSettings = document.getElementById('pageCalculatorSettings'); // New Calculator Settings Page
 const navButtons = {
   home: document.getElementById('navHome'),
   saved: document.getElementById('navSavedInvoices'),
-  customers: document.getElementById('navCustomers'),
-  calculator: document.getElementById('navCalculator'), // New Calculator Nav Button
   reminders: document.getElementById('navReminders'), // New Reminders Nav Button
+  settings: document.getElementById('navSettings'),
 };
+const settingsBtn = document.getElementById('settingsBtn');
 
 const invoiceActionButtons = [
     document.getElementById('togglePreviewBtn'),
@@ -71,6 +74,9 @@ function showPage(pageId) {
   if(pageCustomers) pageCustomers.style.display = 'none';
   if(pageCalculator) pageCalculator.style.display = 'none'; // Hide calculator
   if(pageReminders) pageReminders.style.display = 'none'; // Hide reminders
+  if(pageSettings) pageSettings.style.display = 'none'; // Hide settings
+  if(pageInvoiceSettings) pageInvoiceSettings.style.display = 'none'; // Hide invoice settings
+  if(pageCalculatorSettings) pageCalculatorSettings.style.display = 'none'; // Hide calculator settings
 
   // Show/hide invoice action buttons
   const isInvoicePage = pageId === 'invoices' || (!pageId && pageInvoices);
@@ -80,11 +86,54 @@ function showPage(pageId) {
 
   // Zeige die ausgewählte Seite an
   if (pageId === 'home' && pageHome) {
-    pageHome.style.display = 'grid'; // Use grid for the home page layout
+    pageHome.style.display = 'block'; // Change to block to manage internal sections
+    const upcomingRemindersCount = getUpcomingRemindersCount();
+    const overdueInvoicesCount = getOverdueInvoicesCount();
+
+    pageHome.innerHTML = `
+        <div class="summary-cards-container">
+            <div class="card summary-card reminder-summary-card">
+                <div class="card-content">
+                    <div class="summary-card-header">
+                        <i data-lucide="bell" class="icon-lg"></i>
+                        <span>Anstehende Erinnerungen (7 Tage)</span>
+                    </div>
+                    <div class="summary-card-body">
+                        <span class="count">${upcomingRemindersCount}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card summary-card invoice-summary-card">
+                <div class="card-content">
+                    <div class="summary-card-header">
+                        <i data-lucide="file-warning" class="icon-lg"></i>
+                        <span>Überfällige Rechnungen (>14 Tage)</span>
+                    </div>
+                    <div class="summary-card-body">
+                        <span class="count">${overdueInvoicesCount}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="unpaidInvoicesSection" class="home-section">
+            <h3>Unbezahlte Rechnungen</h3>
+            <div class="home-grid"></div>
+        </div>
+        <div id="upcomingRemindersSection" class="home-section">
+            <h3>Anstehende Erinnerungen</h3>
+            <div class="home-grid"></div>
+        </div>
+    `;
     renderUnpaidInvoices();
+    renderUpcomingReminders();
+    if (window.lucide) window.lucide.createIcons(); // Re-render icons for new cards
   } else if (pageId === 'saved' && pageSavedInvoices) {
     pageSavedInvoices.style.display = 'flex'; // Use flex for new layout
     renderSavedInvoices();
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle) {
+        pageTitle.textContent = 'Analyse';
+    }
   } else if (pageId === 'customers' && pageCustomers) {
     pageCustomers.style.display = 'flex'; // Use flex for new layout
     renderCustomerList();
@@ -93,29 +142,129 @@ function showPage(pageId) {
   } else if (pageId === 'reminders' && pageReminders) {
     pageReminders.style.display = 'flex'; // Show reminders
     renderReminders(); // Render reminders when the page is shown
+  } else if (pageId === 'settings' && pageSettings) {
+    pageSettings.style.display = 'flex';
+  } else if (pageId === 'invoiceSettings' && pageInvoiceSettings) {
+    pageInvoiceSettings.style.display = 'flex';
+  } else if (pageId === 'calculatorSettings' && pageCalculatorSettings) {
+    pageCalculatorSettings.style.display = 'flex';
   } else { // Standardfall ist 'invoices'
     if(pageInvoices) pageInvoices.style.display = 'flex'; // Use flex for new layout
   }
 }
 if(navButtons.home) navButtons.home.onclick = () => showPage('home');
 if(navButtons.saved) navButtons.saved.onclick = () => showPage('saved');
-if(navButtons.customers) navButtons.customers.onclick = () => showPage('customers');
-if(navButtons.calculator) navButtons.calculator.onclick = () => showPage('calculator'); // New event listener
 if(navButtons.reminders) navButtons.reminders.onclick = () => showPage('reminders'); // New event listener
 
+if(navButtons.settings) {
+    navButtons.settings.onclick = () => {
+        showPage('settings');
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Einstellungen';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+    };
+}
+
+const navInvoiceSettings = document.getElementById('navInvoiceSettings');
+if(navInvoiceSettings) {
+    navInvoiceSettings.onclick = () => {
+        showPage('invoiceSettings');
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Einstellungen der Rechnung';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+    };
+}
+
+const navCalculatorSettings = document.getElementById('navCalculatorSettings');
+if(navCalculatorSettings) {
+    navCalculatorSettings.onclick = () => {
+        showPage('calculatorSettings');
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Einstellungen der Rechner';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+    };
+}
+
+const navCustomersSettings = document.getElementById('navCustomersSettings');
+if(navCustomersSettings) {
+    navCustomersSettings.onclick = () => {
+        showPage('customers');
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Kundenverwaltung';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+    };
+}
+
 const fabNewInvoice = document.getElementById('fabNewInvoice');
+const fabDropdown = document.getElementById('fabDropdown');
+const dropdownNewInvoice = document.getElementById('dropdownNewInvoice');
+const dropdownCalculator = document.getElementById('dropdownCalculator');
+
 if(fabNewInvoice) {
-    fabNewInvoice.onclick = () => {
+    fabNewInvoice.onclick = (event) => {
+        event.stopPropagation(); // Prevent the document click listener from immediately closing it
+        fabDropdown.classList.toggle('show');
+    };
+}
+
+if(dropdownNewInvoice) {
+    dropdownNewInvoice.onclick = () => {
         showPage('invoices');
-        // Update title and nav active state
         const pageTitle = document.getElementById('page-title');
         if (pageTitle) {
             pageTitle.textContent = 'Rechnungserstellung';
         }
         const navLinks = document.querySelectorAll('.nav-link');
         navLinks.forEach(l => l.classList.remove('active'));
+        fabDropdown.classList.remove('show'); // Hide dropdown after selection
     };
 }
+
+if(dropdownCalculator) {
+    dropdownCalculator.onclick = () => {
+        showPage('calculator');
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Rechner';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+        fabDropdown.classList.remove('show'); // Hide dropdown after selection
+    };
+}
+
+const dropdownCustomers = document.getElementById('dropdownCustomers');
+if(dropdownCustomers) {
+    dropdownCustomers.onclick = () => {
+        showPage('customers');
+        const pageTitle = document.getElementById('page-title');
+        if (pageTitle) {
+            pageTitle.textContent = 'Kundenverwaltung';
+        }
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(l => l.classList.remove('active'));
+        fabDropdown.classList.remove('show'); // Hide dropdown after selection
+    };
+}
+
+// Hide dropdown when clicking anywhere else on the document
+document.addEventListener('click', (event) => {
+    if (fabDropdown && fabDropdown.classList.contains('show') && !fabDropdown.contains(event.target) && !fabNewInvoice.contains(event.target)) {
+        fabDropdown.classList.remove('show');
+    }
+});
 
 const selectCustomerBtn = document.getElementById('selectCustomerBtn');
 if(selectCustomerBtn) selectCustomerBtn.onclick = () => showPage('customers');
@@ -165,7 +314,7 @@ const totalRevenueUnpaidEl = document.getElementById('totalRevenueUnpaid');
 // Sequenz-Steuerung
 function getSequenceState(){
   const s = JSON.parse(localStorage.getItem('invoiceSequence')||'null')
-  return s || {prefix: sequencePrefix.value || 'U2025-', next: Number(sequenceStart.value)||1}
+  return s || {prefix: sequencePrefix.value || 'UR2025-', next: Number(sequenceStart.value)||1}
 }
 function saveSequenceState(state){ localStorage.setItem('invoiceSequence', JSON.stringify(state)) }
 function nextInvoiceNumber(){
@@ -177,7 +326,7 @@ function nextInvoiceNumber(){
 }
 if(resetSequenceBtn) resetSequenceBtn.onclick = ()=>{
   const start = Number(sequenceStart.value) || 1
-  const pref = sequencePrefix.value || 'U2025-'
+  const pref = sequencePrefix.value || 'UR2025-'
   saveSequenceState({prefix: pref, next: start})
   alert('Sequenz auf ' + pref + start + ' gesetzt')
 }
@@ -658,6 +807,9 @@ function updatePreview(){
     return `<tr><td>${escapeHtml(opt)}</td><td>${escapeHtml(d)}</td><td class="center">${q}</td><td class="center">${format(p)}</td><td class="center">${format(line)}</td></tr>`
   }).join("")
 
+    const contactEmail = document.getElementById('contactEmail') ? document.getElementById('contactEmail').value : 'urlaubsde@gmail.com';
+    const contactPhone = document.getElementById('contactPhone') ? document.getElementById('contactPhone').value : '+4917664957576';
+
   previewEl.innerHTML=`
     <div class="pdf-block invoice-header">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap: wrap; gap: 20px;">
@@ -695,7 +847,7 @@ function updatePreview(){
         ${paymentHtml}
     </div>
     <div class="pdf-block" style="border-top: 1px solid #ccc; margin-top: 40px; padding-top: 10px; text-align: center; font-size: 0.8rem; color: #555;">
-        Email: urlaubsde@gmail.com | Telefon: +4917664957576
+        Email: ${escapeHtml(contactEmail)} | Telefon: ${escapeHtml(contactPhone)}
     </div>`;
 }
 
@@ -705,6 +857,7 @@ if (updatePreviewBtn) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadInvoiceSettings(); // Load invoice settings on startup
   if (document.getElementById('pageInvoices')) {
     // Füge Passagiere ohne Gepäck-Daten hinzu (die UI wird erstellt)
     addPassenger("Max Mustermann","1985-05-10");
@@ -713,8 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
     addFlightRow('outboundBody',"Hamburg","Rom","2025-09-12","08:15","2025-09-12","11:05", "Lufthansa LH24", "ABCDE1");
     addItem("Hotel 7 Nächte",1,560);
     updatePreview();
-    toggleBankDetails(); 
   }
+  toggleBankDetails();
 });
 
 // PDF EXPORT
@@ -722,6 +875,12 @@ if (downloadPDFBtn) downloadPDFBtn.onclick = async () => {
     saveInvoice();
     updatePreview();
     
+    const previewPane = document.querySelector('.preview-pane');
+    const wasHidden = previewPane.style.display === 'none';
+    if (wasHidden) {
+        previewPane.style.display = 'flex'; // Temporarily show the preview pane
+    }
+
     // Warten Sie einen kurzen Moment, damit das DOM nach `updatePreview` vollständig aktualisiert ist
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -841,8 +1000,13 @@ if (downloadPDFBtn) downloadPDFBtn.onclick = async () => {
         }
     }
     
+    
     const fileName = `Rechnung_${document.getElementById('invoiceNumber').value}.pdf`;
     pdf.save(fileName);
+
+    if (wasHidden) {
+        previewPane.style.display = 'none'; // Hide it again if it was hidden initially
+    }
 };
 
 
@@ -855,6 +1019,8 @@ function collectInvoiceData(){
   return {
     number: invoiceNumberEl.value, date: invoiceDateEl.value,
     from: document.getElementById('from').value, to: document.getElementById('to').value,
+    customerEmail: document.getElementById('customerEmail').value,
+    customerPhone: document.getElementById('customerPhone').value,
     note: document.getElementById('note').value, payment: document.getElementById('payment').value,
     
     // ========== START: GEPÄCK-ÄNDERUNG (Speichern) ==========
@@ -891,6 +1057,118 @@ function saveInvoice(){
   };
 
   localStorage.setItem('invoices', JSON.stringify(list));
+
+  // NEU: Kundeninformationen speichern
+  const customerNameFull = (data.to || '').split('\n')[0].trim();
+  let firstName = '';
+  let lastName = '';
+  const nameParts = customerNameFull.split(' ');
+  if (nameParts.length > 1) {
+      firstName = nameParts.slice(0, -1).join(' ');
+      lastName = nameParts[nameParts.length - 1];
+  } else {
+      firstName = customerNameFull;
+  }
+
+  const customerData = {
+      firstName: firstName,
+      lastName: lastName,
+      phone: data.customerPhone || '',
+      email: data.customerEmail || '',
+      // Add other relevant fields if available in invoice data
+      id: `cust_${Date.now()}` // Temporärer ID, falls noch keiner existiert
+  };
+
+  if (customerData.firstName) { // Nur speichern, wenn ein Name vorhanden ist
+      let customers = getCustomers();
+      const existingCustomer = customers.find(c => 
+          (c.email && c.email === customerData.email && customerData.email !== '') ||
+          (c.phone && c.phone === customerData.phone && customerData.phone !== '') ||
+          (c.firstName === customerData.firstName && c.lastName === customerData.lastName && customerData.firstName !== '')
+      );
+
+      if (!existingCustomer) {
+          customers.push(customerData);
+          saveCustomers(customers);
+          renderCustomerList(); // Aktualisiere die Kundenliste in der UI
+      }
+  }
+  
+  createInvoiceReminders(data); // NEU: Erinnerungen erstellen
+}
+
+// NEU: Funktion zum Erstellen von Rechnungserinnerungen
+function createInvoiceReminders(invoiceData) {
+    const customerName = (invoiceData.to || '').split('\n')[0];
+    const customerContact = [];
+    if (invoiceData.customerEmail) customerContact.push(`E-Mail: ${invoiceData.customerEmail}`);
+    if (invoiceData.customerPhone) customerContact.push(`Telefon: ${invoiceData.customerPhone}`);
+    const customerNote = customerContact.length > 0 ? `Kunde: ${customerName}\n${customerContact.join('\n')}` : `Kunde: ${customerName}`;
+
+    const allReminders = getReminders();
+
+    // Erinnerungen für Hinflüge
+    invoiceData.outbound.forEach(flight => {
+        if (flight.depDate && flight.depTime) {
+            const departureDateTime = new Date(`${flight.depDate}T${flight.depTime}`);
+            const reminderDateTime = new Date(departureDateTime);
+            reminderDateTime.setDate(reminderDateTime.getDate() - 1); // 1 Tag vor Abflug
+
+            const reminderDate = reminderDateTime.toISOString().split('T')[0];
+            const reminderTime = reminderDateTime.toTimeString().slice(0, 5);
+
+            const reminderText = `Rechnung ${invoiceData.number}: Hinflug ${flight.fromCity} nach ${flight.toCity}`;
+            const reminderNote = `Flugdetails: ${flight.airline || ''} PNR: ${flight.pnr || ''}\n${customerNote}`;
+
+            const newReminder = {
+                id: `inv_rem_${invoiceData.number}_outbound_${flight.depDate}_${flight.depTime}`,
+                type: 'Erinnerung',
+                text: reminderText,
+                note: reminderNote,
+                date: reminderDate,
+                time: reminderTime,
+                notifications: [{ id: `notif_${Date.now()}_${Math.random()}`, type: 'at_due_date', value: '', triggered: false }],
+                completed: false
+            };
+            // Vermeide doppelte Erinnerungen
+            if (!allReminders.some(r => r.id === newReminder.id)) {
+                allReminders.push(newReminder);
+            }
+        }
+    });
+
+    // Erinnerungen für Rückflüge (falls vorhanden)
+    invoiceData.returns.forEach(flight => {
+        if (flight.depDate && flight.depTime) {
+            const departureDateTime = new Date(`${flight.depDate}T${flight.depTime}`);
+            const reminderDateTime = new Date(departureDateTime);
+            reminderDateTime.setDate(reminderDateTime.getDate() - 1); // 1 Tag vor Abflug
+
+            const reminderDate = reminderDateTime.toISOString().split('T')[0];
+            const reminderTime = reminderDateTime.toTimeString().slice(0, 5);
+
+            const reminderText = `Rechnung ${invoiceData.number}: Rückflug ${flight.fromCity} nach ${flight.toCity}`;
+            const reminderNote = `Flugdetails: ${flight.airline || ''} PNR: ${flight.pnr || ''}\n${customerNote}`;
+
+            const newReminder = {
+                id: `inv_rem_${invoiceData.number}_return_${flight.depDate}_${flight.depTime}`,
+                type: 'Erinnerung',
+                text: reminderText,
+                note: reminderNote,
+                date: reminderDate,
+                time: reminderTime,
+                notifications: [{ id: `notif_${Date.now()}_${Math.random()}`, type: 'at_due_date', value: '', triggered: false }],
+                completed: false
+            };
+            // Vermeide doppelte Erinnerungen
+            if (!allReminders.some(r => r.id === newReminder.id)) {
+                allReminders.push(newReminder);
+            }
+        }
+    });
+
+    saveReminders(allReminders);
+    // Optional: updateReminderNotificationUI(); if you want to immediately reflect new reminders in the dropdown
 }
 
 if(saveInvoiceBtn) saveInvoiceBtn.onclick = ()=>{
@@ -906,7 +1184,8 @@ if(saveInvoiceBtn) saveInvoiceBtn.onclick = ()=>{
 // --- NEUE FUNKTIONEN FÜR RECHNUNGSVERWALTUNG ---
 
 function renderUnpaidInvoices() {
-    if (!pageHome) return;
+    const unpaidInvoicesSection = document.querySelector('#unpaidInvoicesSection .home-grid');
+    if (!unpaidInvoicesSection) return;
 
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
     const unpaidInvoices = invoices.filter(inv => inv.status === 'Unbezahlt' && inv.date);
@@ -915,11 +1194,11 @@ function renderUnpaidInvoices() {
     unpaidInvoices.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (unpaidInvoices.length === 0) {
-        pageHome.innerHTML = '<div class="card" style="grid-column: 1 / -1;"><div class="card-content" style="text-align: center;">Keine unbezahlten Rechnungen gefunden. Gut gemacht!</div></div>';
+        unpaidInvoicesSection.innerHTML = '<div class="card" style="grid-column: 1 / -1;"><div class="card-content" style="text-align: center;">Keine unbezahlten Rechnungen gefunden. Gut gemacht!</div></div>';
         return;
     }
 
-    pageHome.innerHTML = unpaidInvoices.map(inv => {
+    unpaidInvoicesSection.innerHTML = unpaidInvoices.map(inv => {
         const total = getInvoiceTotal(inv);
         const invoiceDate = new Date(inv.date);
         const today = new Date();
@@ -970,9 +1249,202 @@ function renderUnpaidInvoices() {
     });
 }
 
+function renderUpcomingReminders() {
+    const upcomingRemindersSection = document.querySelector('#upcomingRemindersSection .home-grid');
+    if (!upcomingRemindersSection) return;
+
+    const allReminders = getReminders();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize 'now' to start of today for date comparison
+
+    const upcomingReminders = allReminders.filter(rem => {
+        if (rem.completed) return false;
+        const reminderDateTime = new Date(`${rem.date}T${rem.time}`);
+        // Only show reminders that are due today or in the future
+        return reminderDateTime >= now;
+    });
+
+    // Sort by due date, closest first
+    upcomingReminders.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+    let remindersHtml = '';
+    if (upcomingReminders.length === 0) {
+        upcomingRemindersSection.innerHTML = '<div class="card" style="grid-column: 1 / -1;"><div class="card-content" style="text-align: center;">Keine anstehenden Erinnerungen oder Aufgaben.</div></div>';
+    } else {
+        remindersHtml = upcomingReminders.map(rem => {
+            const reminderDueDate = new Date(`${rem.date}T${rem.time}`);
+            const timeDiff = reminderDueDate.getTime() - now.getTime();
+            const daysUntilDue = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)); // Days until due, rounded up
+
+            let level = 1; // Default lightest color
+            if (daysUntilDue <= 0) level = 5; // Due today or in the past (but not completed)
+            else if (daysUntilDue <= 3) level = 4; // Due within 1-3 days
+            else if (daysUntilDue <= 7) level = 3; // Due within 4-7 days
+            else if (daysUntilDue <= 14) level = 2; // Due within 8-14 days
+
+            const typeIcon = rem.type === 'Aufgabe' ? 'clipboard-check' : 'bell';
+            const dueDateText = daysUntilDue <= 0 ? 'Heute fällig' : `Fällig in ${daysUntilDue} Tagen`;
+
+            return `
+                <div class="card reminder-card reminder-level-${level}" data-id="${rem.id}">
+                    <div class="card-content">
+                        <div class="reminder-card-header">
+                            <i data-lucide="${typeIcon}" class="type-icon"></i>
+                            <span>${escapeHtml(rem.text)}</span>
+                        </div>
+                        <div class="reminder-card-body">
+                            <small class="due-date">${dueDateText} (${escapeHtml(rem.date)} ${escapeHtml(rem.time)})</small>
+                            ${rem.note ? `<p class="reminder-note">${escapeHtml(rem.note)}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-secondary edit-reminder" data-id="${rem.id}" title="Bearbeiten"><i data-lucide="edit"></i>Bearbeiten</button>
+                        <button class="btn btn-icon btn-primary toggle-complete-reminder" data-id="${rem.id}" title="Als erledigt markieren"><i data-lucide="check"></i></button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    upcomingRemindersSection.innerHTML = remindersHtml;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // Attach event listeners for reminders
+    upcomingRemindersSection.querySelectorAll('.edit-reminder').forEach(b => b.onclick = (e) => { loadReminderForEdit(e.currentTarget.closest('.card').dataset.id); showPage('reminders'); });
+    upcomingRemindersSection.querySelectorAll('.toggle-complete-reminder').forEach(b => {
+        b.onclick = (e) => {
+            const id = e.currentTarget.closest('.card').dataset.id;
+            let allReminders = getReminders();
+            const index = allReminders.findIndex(rem => rem.id === id);
+            if (index > -1) {
+                allReminders[index].completed = true; // Mark as completed
+                saveReminders(allReminders);
+                renderUpcomingReminders(); // Re-render reminders
+                renderReminders(); // Also update the main reminders page
+            }
+        };
+    });
+}
+
+function renderUpcomingReminders() {
+    if (!pageHome) return;
+
+    const allReminders = getReminders();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize 'now' to start of today for date comparison
+
+    const upcomingReminders = allReminders.filter(rem => {
+        if (rem.completed) return false;
+        const reminderDateTime = new Date(`${rem.date}T${rem.time}`);
+        // Only show reminders that are due today or in the future
+        return reminderDateTime >= now;
+    });
+
+    // Sort by due date, closest first
+    upcomingReminders.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+    let remindersHtml = '';
+    if (upcomingReminders.length === 0) {
+        remindersHtml = '<div class="card" style="grid-column: 1 / -1;"><div class="card-content" style="text-align: center;">Keine anstehenden Erinnerungen oder Aufgaben.</div></div>';
+    } else {
+        remindersHtml = upcomingReminders.map(rem => {
+            const reminderDueDate = new Date(`${rem.date}T${rem.time}`);
+            const timeDiff = reminderDueDate.getTime() - now.getTime();
+            const daysUntilDue = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)); // Days until due, rounded up
+
+            let level = 1; // Default lightest color
+            if (daysUntilDue <= 0) level = 5; // Due today or in the past (but not completed)
+            else if (daysUntilDue <= 3) level = 4; // Due within 1-3 days
+            else if (daysUntilDue <= 7) level = 3; // Due within 4-7 days
+            else if (daysUntilDue <= 14) level = 2; // Due within 8-14 days
+
+            const typeIcon = rem.type === 'Aufgabe' ? 'clipboard-check' : 'bell';
+            const dueDateText = daysUntilDue <= 0 ? 'Heute fällig' : `Fällig in ${daysUntilDue} Tagen`;
+
+            return `
+                <div class="card reminder-card reminder-level-${level}" data-id="${rem.id}">
+                    <div class="card-content">
+                        <div class="reminder-card-header">
+                            <i data-lucide="${typeIcon}" class="type-icon"></i>
+                            <span>${escapeHtml(rem.text)}</span>
+                        </div>
+                        <div class="reminder-card-body">
+                            <small class="due-date">${dueDateText} (${escapeHtml(rem.date)} ${escapeHtml(rem.time)})</small>
+                            ${rem.note ? `<p class="reminder-note">${escapeHtml(rem.note)}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-secondary edit-reminder" data-id="${rem.id}" title="Bearbeiten"><i data-lucide="edit"></i>Bearbeiten</button>
+                        <button class="btn btn-icon btn-primary toggle-complete-reminder" data-id="${rem.id}" title="Als erledigt markieren"><i data-lucide="check"></i></button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Create a container for reminders if it doesn't exist
+    let remindersSection = document.getElementById('upcomingRemindersSection');
+    if (!remindersSection) {
+        remindersSection = document.createElement('div');
+        remindersSection.id = 'upcomingRemindersSection';
+        remindersSection.className = 'home-section'; // Use a class for styling
+        pageHome.appendChild(remindersSection);
+    }
+    remindersSection.innerHTML = `<h3>Anstehende Erinnerungen</h3><div class="home-grid">${remindersHtml}</div>`;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // Attach event listeners for reminders
+    remindersSection.querySelectorAll('.edit-reminder').forEach(b => b.onclick = (e) => { loadReminderForEdit(e.currentTarget.closest('.card').dataset.id); showPage('reminders'); });
+    remindersSection.querySelectorAll('.toggle-complete-reminder').forEach(b => {
+        b.onclick = (e) => {
+            const id = e.currentTarget.closest('.card').dataset.id;
+            let allReminders = getReminders();
+            const index = allReminders.findIndex(rem => rem.id === id);
+            if (index > -1) {
+                allReminders[index].completed = true; // Mark as completed
+                saveReminders(allReminders);
+                renderUpcomingReminders(); // Re-render reminders
+                renderReminders(); // Also update the main reminders page
+            }
+        };
+    });
+}
+
 
 function getInvoiceTotal(invoice) {
     return (invoice.items || []).reduce((sum, item) => sum + (toNum(item.qty) * toNum(item.price)), 0);
+}
+
+function getUpcomingRemindersCount() {
+    const allReminders = getReminders();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize 'now' to start of today
+
+    const sevenDaysFromNow = new Date(now);
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    const upcomingReminders = allReminders.filter(rem => {
+        if (rem.completed) return false;
+        const reminderDueDate = new Date(`${rem.date}T${rem.time}`);
+        return reminderDueDate >= now && reminderDueDate <= sevenDaysFromNow;
+    });
+    return upcomingReminders.length;
+}
+
+function getOverdueInvoicesCount() {
+    const allInvoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize 'now' to start of today
+
+    const overdueInvoices = allInvoices.filter(inv => {
+        if (inv.status === 'Bezahlt' || !inv.date) return false;
+        const invoiceDate = new Date(inv.date);
+        const daysOld = Math.floor((now - invoiceDate) / (1000 * 60 * 60 * 24));
+        return daysOld > 14;
+    });
+    return overdueInvoices.length;
 }
 
 function renderSavedInvoices() {
@@ -1153,6 +1625,81 @@ function loadInvoice(number){
   toggleBankDetails(); 
   updatePreview()
 }
+// --- Invoice Settings Save/Load ---
+const INVOICE_SETTINGS_KEY = 'invoiceSettings';
+
+function saveInvoiceSettings() {
+    const settings = {
+        note: document.getElementById('note').value,
+        paymentMethod: document.getElementById('paymentMethod').value,
+        payment: document.getElementById('payment').value,
+        logoData: logoData, // Use the global logoData
+        bgSettings: {
+            enabled: bgToggle.checked,
+            size: bgSize.value,
+            opacity: bgOpacity.value,
+            color: bgColor.value,
+            colorOpacity: bgColorOpacity.value,
+            headingColor: headingColorEl.value
+        },
+        sequence: {
+            enableSequence: enableSequence.checked,
+            prefix: sequencePrefix.value,
+            start: sequenceStart.value
+        },
+        contactEmail: document.getElementById('contactEmail').value,
+        contactPhone: document.getElementById('contactPhone').value
+    };
+    localStorage.setItem(INVOICE_SETTINGS_KEY, JSON.stringify(settings));
+    alert('Rechnungseinstellungen gespeichert!');
+}
+
+function loadInvoiceSettings() {
+    const settings = JSON.parse(localStorage.getItem(INVOICE_SETTINGS_KEY) || '{}');
+
+    // Apply Note & Payment settings
+    if (settings.note) document.getElementById('note').value = settings.note;
+    if (settings.paymentMethod) document.getElementById('paymentMethod').value = settings.paymentMethod;
+    if (settings.payment) document.getElementById('payment').value = settings.payment;
+
+    // Apply Branding & Design settings
+    if (settings.logoData) {
+        logoData = settings.logoData; // Restore global logoData
+    }
+    if (settings.bgSettings) {
+        bgToggle.checked = settings.bgSettings.enabled;
+        bgSize.value = settings.bgSettings.size;
+        bgOpacity.value = settings.bgSettings.opacity;
+        bgColor.value = settings.bgSettings.color;
+        bgColorOpacity.value = settings.bgSettings.colorOpacity;
+        headingColorEl.value = settings.bgSettings.headingColor || '#0277bd';
+    }
+
+    // Apply Sequence settings
+    if (settings.sequence) {
+        enableSequence.checked = settings.sequence.enableSequence;
+        sequencePrefix.value = settings.sequence.prefix;
+        sequenceStart.value = settings.sequence.start;
+    }
+
+    // Apply Contact Info settings
+    if (settings.contactEmail && document.getElementById('contactEmail')) {
+        document.getElementById('contactEmail').value = settings.contactEmail;
+    }
+    if (settings.contactPhone && document.getElementById('contactPhone')) {
+        document.getElementById('contactPhone').value = settings.contactPhone;
+    }
+    
+    applyBackgroundSettings(); // Re-apply background settings after loading
+    toggleBankDetails(); // Update bank details visibility
+}
+
+// Attach event listener for the new save button
+const saveInvoiceSettingsBtn = document.getElementById('saveInvoiceSettings');
+if (saveInvoiceSettingsBtn) {
+    saveInvoiceSettingsBtn.onclick = saveInvoiceSettings;
+}
+
 function loadInvoiceAndDownload(number){ 
     loadInvoice(number); 
     setTimeout(()=>downloadPDFBtn.click(), 500);
@@ -1283,13 +1830,23 @@ if (printPDFBtn) {
 document.addEventListener('DOMContentLoaded', () => {
     const togglePreviewBtn = document.getElementById('togglePreviewBtn');
     const previewPane = document.querySelector('.preview-pane');
+    // const appLayout = document.querySelector('.app-layout'); // No longer needed
 
-    if (togglePreviewBtn && previewPane) {
+    if (togglePreviewBtn && previewPane) { // Removed appLayout from condition
+        // Initial state: preview is hidden
+        previewPane.style.display = 'none';
+        // appLayout.classList.remove('show-preview'); // No longer needed
+
         togglePreviewBtn.addEventListener('click', () => {
             const isHidden = previewPane.style.display === 'none';
-            previewPane.style.display = isHidden ? 'block' : 'none';
-            if (!isHidden) {
-                previewPane.scrollIntoView({ behavior: 'smooth' });
+            if (isHidden) {
+                previewPane.style.display = 'flex'; // Use flex to center content
+                // appLayout.classList.add('show-preview'); // No longer needed
+                updatePreview(); // Update preview when shown
+                // previewPane.scrollIntoView({ behavior: 'smooth' }); // No longer needed, as it's part of the scrollable content
+            } else {
+                previewPane.style.display = 'none';
+                // appLayout.classList.remove('show-preview'); // No longer needed
             }
         });
     }
@@ -1297,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- PERCENTAGE CALCULATOR LOGIC ---
 document.addEventListener('DOMContentLoaded', () => {
-    if (!document.getElementById('pageCalculator')) return;
+    if (!document.getElementById('pageCalculatorSettings')) return;
 
     const defaultPercentages = {
         '0-150': 20,
@@ -1378,7 +1935,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         resultEl.textContent = formatter.format(finalValue);
-        percentageNoteEl.textContent = `تمت إضافة ${formatter.format(percentage)}% (الفئة: ${appliedTier})`;
+        percentageNoteEl.textContent = `${formatter.format(percentage)}% hinzugefügt (Stufe: ${appliedTier})`;
     }
 
     // --- Setup and Event Listeners ---
@@ -1390,7 +1947,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'percentage-item';
             
             const label = document.createElement('label');
-            label.textContent = `الفئة ${tier}`;
+            label.textContent = `Stufe ${tier}`;
             
             const input = document.createElement('input');
             input.type = 'number';
@@ -1415,9 +1972,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(resultEl.textContent).then(() => {
-                showToast('تم نسخ النتيجة بنجاح!');
+                showToast('Ergebnis erfolgreich kopiert!');
             }).catch(err => {
-                showToast('فشل النسخ!');
+                showToast('Kopieren fehlgeschlagen!');
                 console.error('Failed to copy: ', err);
             });
         });
@@ -1427,7 +1984,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 percentageInputs[tier].value = value;
             });
             calculate();
-            showToast('تمت إعادة ضبط القيم الافتراضية.');
+            showToast('Standardwerte wiederhergestellt.');
         });
 
         // Initial calculation
@@ -1438,12 +1995,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- REMINDER LOGIC ---
+// --- REMINDER LOGIC (V3) ---
 const reminderTextEl = document.getElementById('reminderText');
+const reminderNoteEl = document.getElementById('reminderNote');
 const reminderDateEl = document.getElementById('reminderDate');
 const reminderTimeEl = document.getElementById('reminderTime');
 const addReminderBtn = document.getElementById('addReminderBtn');
 const remindersListEl = document.getElementById('remindersList');
+const addNotificationRuleBtn = document.getElementById('addNotificationRuleBtn');
+const notificationRulesContainer = document.getElementById('notificationRulesContainer');
 
 // Notification elements
 const reminderNotificationBtn = document.getElementById('reminderNotificationBtn');
@@ -1453,56 +2013,146 @@ const notificationRemindersListEl = document.getElementById('notificationReminde
 const closeReminderDropdownBtn = document.getElementById('closeReminderDropdown');
 const goToRemindersPageBtn = document.getElementById('goToRemindersPage');
 
+// --- Storage Keys ---
+const REMINDERS_KEY = 'reminders_v3';
+const TRIGGERED_NOTIFICATIONS_KEY = 'triggeredNotifications_v3';
 
+// --- Data Access ---
 function getReminders() {
-    return JSON.parse(localStorage.getItem('reminders') || '[]');
+    return JSON.parse(localStorage.getItem(REMINDERS_KEY) || '[]');
 }
 
 function saveReminders(reminders) {
-    localStorage.setItem('reminders', JSON.stringify(reminders));
-    updateReminderNotification(); // Update notification when reminders change
+    localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders));
+    // No direct UI update here, the checker loop handles notifications
+}
+
+function getTriggeredNotifications() {
+    return JSON.parse(localStorage.getItem(TRIGGERED_NOTIFICATIONS_KEY) || '[]');
+}
+
+function saveTriggeredNotifications(notifications) {
+    localStorage.setItem(TRIGGERED_NOTIFICATIONS_KEY, JSON.stringify(notifications));
+    updateReminderNotificationUI(); // Update UI whenever triggered notifications change
+}
+
+
+// --- UI Functions ---
+
+function addNotificationRule(type = 'at_due_date', value = '') {
+    if (!notificationRulesContainer) return;
+
+    const ruleDiv = document.createElement('div');
+    ruleDiv.className = 'notification-rule';
+
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'rule-type';
+    typeSelect.innerHTML = `
+        <option value="at_due_date">Zum Fälligkeitsdatum</option>
+        <option value="hours_before">Stunden vorher</option>
+        <option value="days_before">Tage vorher</option>
+    `;
+    typeSelect.value = type;
+
+    const valueInput = document.createElement('input');
+    valueInput.type = 'number';
+    valueInput.className = 'value-input';
+    valueInput.style.display = 'none';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn btn-icon danger';
+    removeBtn.innerHTML = '<i data-lucide="x"></i>';
+    removeBtn.onclick = () => ruleDiv.remove();
+
+    const handleTypeChange = () => {
+        const selectedType = typeSelect.value;
+        if (selectedType === 'hours_before') {
+            valueInput.style.display = 'block';
+            valueInput.min = 1;
+            valueInput.max = 12;
+            valueInput.placeholder = '1-12';
+        } else if (selectedType === 'days_before') {
+            valueInput.style.display = 'block';
+            valueInput.min = 1;
+            valueInput.max = 7;
+            valueInput.placeholder = '1-7';
+        } else {
+            valueInput.style.display = 'none';
+        }
+    };
+
+    typeSelect.onchange = handleTypeChange;
+    
+    ruleDiv.appendChild(typeSelect);
+    ruleDiv.appendChild(valueInput);
+    ruleDiv.appendChild(removeBtn);
+    notificationRulesContainer.appendChild(ruleDiv);
+    
+    if (value) valueInput.value = value;
+    handleTypeChange();
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+if (addNotificationRuleBtn) {
+    addNotificationRuleBtn.onclick = () => addNotificationRule();
 }
 
 function renderReminders() {
     if (!remindersListEl) return;
 
-    const reminders = getReminders().sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.time}`);
-        const dateB = new Date(`${b.date}T${b.time}`);
-        return dateA - dateB;
-    });
+    const reminders = getReminders().sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
     if (reminders.length === 0) {
-        remindersListEl.innerHTML = '<p>Keine Erinnerungen vorhanden.</p>';
+        remindersListEl.innerHTML = '<p>Keine Einträge vorhanden.</p>';
         return;
     }
 
-    remindersListEl.innerHTML = reminders.map(rem => `
+    remindersListEl.innerHTML = reminders.map(rem => {
+        const isAufgabe = rem.type === 'Aufgabe';
+        const typeIcon = isAufgabe ? 'clipboard-check' : 'bell';
+        
+        const notificationsHtml = rem.notifications.map(n => {
+            let text = 'Zum Fälligkeitsdatum';
+            if (n.type === 'hours_before') text = `${n.value} Stunde(n) vorher`;
+            if (n.type === 'days_before') text = `${n.value} Tag(e) vorher`;
+            return `<li><i data-lucide="bell-ring" class="icon-sm"></i> ${escapeHtml(text)}</li>`;
+        }).join('');
+
+        return `
         <div class="saved-inv ${rem.completed ? 'completed-reminder' : ''}" data-id="${rem.id}">
-            <div>
-                <b>${escapeHtml(rem.text)}</b><br>
-                <small>${escapeHtml(rem.date)} ${escapeHtml(rem.time)}</small>
+            <div class="reminder-details">
+                <div class="reminder-header">
+                    <i data-lucide="${typeIcon}" class="type-icon"></i>
+                    <b>${escapeHtml(rem.text)}</b>
+                </div>
+                <small class="due-date">Fällig am: ${escapeHtml(rem.date)} um ${escapeHtml(rem.time)} Uhr</small>
+                ${rem.note ? `<p class="reminder-note">${escapeHtml(rem.note)}</p>` : ''}
+                <ul class="notification-list-display">
+                    ${notificationsHtml}
+                </ul>
             </div>
             <div class="card-actions">
+                <button class="btn btn-icon btn-secondary edit-reminder" data-id="${rem.id}" title="Eintrag bearbeiten">
+                    <i data-lucide="edit"></i>
+                </button>
                 <button class="btn btn-icon ${rem.completed ? 'btn-secondary' : 'btn-primary'} toggle-complete-reminder" data-id="${rem.id}" title="${rem.completed ? 'Als unerledigt markieren' : 'Als erledigt markieren'}">
                     <i data-lucide="${rem.completed ? 'rotate-ccw' : 'check'}"></i>
                 </button>
-                <button class="btn btn-icon danger delete-reminder" data-id="${rem.id}" title="Erinnerung löschen">
+                <button class="btn btn-icon danger delete-reminder" data-id="${rem.id}" title="Eintrag löschen">
                     <i data-lucide="trash-2"></i>
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
     if (window.lucide) window.lucide.createIcons();
 
     remindersListEl.querySelectorAll('.delete-reminder').forEach(btn => {
         btn.onclick = (e) => {
             const id = e.currentTarget.dataset.id;
-            if (confirm('Soll diese Erinnerung wirklich gelöscht werden?')) {
-                let currentReminders = getReminders();
-                currentReminders = currentReminders.filter(rem => rem.id !== id);
-                saveReminders(currentReminders);
+            if (confirm('Soll dieser Eintrag wirklich gelöscht werden?')) {
+                saveReminders(getReminders().filter(rem => rem.id !== id));
                 renderReminders();
             }
         };
@@ -1511,132 +2161,285 @@ function renderReminders() {
     remindersListEl.querySelectorAll('.toggle-complete-reminder').forEach(btn => {
         btn.onclick = (e) => {
             const id = e.currentTarget.dataset.id;
-            let currentReminders = getReminders();
-            const index = currentReminders.findIndex(rem => rem.id === id);
+            const reminders = getReminders();
+            const index = reminders.findIndex(rem => rem.id === id);
             if (index > -1) {
-                currentReminders[index].completed = !currentReminders[index].completed;
-                saveReminders(currentReminders);
+                reminders[index].completed = !reminders[index].completed;
+                saveReminders(reminders);
                 renderReminders();
             }
         };
     });
+
+    remindersListEl.querySelectorAll('.edit-reminder').forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.currentTarget.dataset.id;
+            loadReminderForEdit(id);
+        };
+    });
+}
+
+let editingReminderId = null; // Global variable to store the ID of the reminder being edited
+
+function loadReminderForEdit(id) {
+    const reminders = getReminders();
+    const reminderToEdit = reminders.find(rem => rem.id === id);
+
+    if (!reminderToEdit) {
+        alert('Erinnerung nicht gefunden.');
+        return;
+    }
+
+    editingReminderId = id;
+    reminderTextEl.value = reminderToEdit.text;
+    reminderNoteEl.value = reminderToEdit.note;
+    reminderDateEl.value = reminderToEdit.date;
+    reminderTimeEl.value = reminderToEdit.time;
+
+    // Set radio button for type
+    document.querySelector(`input[name="entryType"][value="${reminderToEdit.type}"]`).checked = true;
+
+    // Clear existing notification rules and load the ones from the reminder
+    notificationRulesContainer.innerHTML = '';
+    reminderToEdit.notifications.forEach(rule => {
+        addNotificationRule(rule.type, rule.value);
+    });
+
+    // Change button text
+    addReminderBtn.textContent = 'Änderungen speichern';
+    addReminderBtn.classList.remove('btn-primary');
+    addReminderBtn.classList.add('btn-secondary');
+    document.getElementById('cancelEditReminderBtn').style.display = 'inline-flex'; // Show cancel button
+
+    // Scroll to the form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// NEU: Event-Listener für den Abbrechen-Button
+const cancelEditReminderBtn = document.getElementById('cancelEditReminderBtn');
+if (cancelEditReminderBtn) {
+    cancelEditReminderBtn.onclick = () => {
+        resetReminderForm();
+    };
 }
 
 if (addReminderBtn) {
     addReminderBtn.onclick = () => {
+        const type = document.querySelector('input[name="entryType"]:checked').value;
         const text = reminderTextEl.value.trim();
+        const note = reminderNoteEl.value.trim();
         const date = reminderDateEl.value;
         const time = reminderTimeEl.value;
 
         if (!text || !date || !time) {
-            alert('Bitte füllen Sie alle Felder aus.');
+            alert('Bitte füllen Sie Titel, Fälligkeitsdatum und -zeit aus.');
             return;
         }
 
-        const newReminder = {
-            id: `rem_${Date.now()}`,
-            text,
-            date,
-            time,
-            completed: false
-        };
+        const notificationRules = [];
+        notificationRulesContainer.querySelectorAll('.notification-rule').forEach(ruleEl => {
+            const type = ruleEl.querySelector('.rule-type').value;
+            const value = ruleEl.querySelector('.value-input').value;
+            // Assign a unique ID to each rule for tracking
+            notificationRules.push({ id: `notif_${Date.now()}_${Math.random()}`, type, value, triggered: false });
+        });
+        
+        if (notificationRules.length === 0) {
+            alert('Bitte fügen Sie mindestens eine Benachrichtigungsregel hinzu.');
+            return;
+        }
 
-        const currentReminders = getReminders();
-        currentReminders.push(newReminder);
+        let currentReminders = getReminders();
+        if (editingReminderId) {
+            // Update existing reminder
+            const index = currentReminders.findIndex(rem => rem.id === editingReminderId);
+            if (index > -1) {
+                // This block updates the existing reminder with the new form data.
+                currentReminders[index] = {
+                    ...currentReminders[index], // Keep existing properties like 'completed'
+                    type,
+                    text,
+                    note,
+                    date,
+                    time,
+                    notifications: notificationRules
+                };
+                showToast('Erinnerung aktualisiert!');
+            }
+            editingReminderId = null; // Reset editing state
+        } else {
+            // Add new reminder
+            const newEntry = {
+                id: `rem_${Date.now()}`,
+                type,
+                text,
+                note,
+                date,
+                time,
+                notifications: notificationRules,
+                completed: false
+            };
+            currentReminders.push(newEntry);
+            showToast(`${type} hinzugefügt!`);
+        }
+        
         saveReminders(currentReminders);
-
-        reminderTextEl.value = '';
-        reminderDateEl.value = '';
-        reminderTimeEl.value = '';
+        resetReminderForm();
         renderReminders();
-        showToast('Erinnerung hinzugefügt!');
     };
 }
 
-function updateReminderNotification() {
-    if (!reminderCountEl || !notificationRemindersListEl) return;
-
-    const allReminders = getReminders();
-    const activeReminders = allReminders.filter(rem => !rem.completed);
-
-    reminderCountEl.textContent = activeReminders.length;
-    if (activeReminders.length > 0) {
-        reminderCountEl.style.display = 'flex'; // Show badge
-    } else {
-        reminderCountEl.style.display = 'none'; // Hide badge
-    }
-
-    if (activeReminders.length === 0) {
-        notificationRemindersListEl.innerHTML = '<p class="no-reminders">Keine ausstehenden Erinnerungen.</p>';
-    } else {
-        notificationRemindersListEl.innerHTML = activeReminders.slice(0, 5).map(rem => `
-            <div class="notification-item" data-id="${rem.id}">
-                <div class="notification-item-text">
-                    <b>${escapeHtml(rem.text)}</b>
-                    <small>${escapeHtml(rem.date)} ${escapeHtml(rem.time)}</small>
-                </div>
-                <button class="btn btn-icon btn-sm toggle-complete-reminder-notification" data-id="${rem.id}" title="Als erledigt markieren">
-                    <i data-lucide="check"></i>
-                </button>
-            </div>
-        `).join('');
-
-        notificationRemindersListEl.querySelectorAll('.toggle-complete-reminder-notification').forEach(btn => {
-            btn.onclick = (e) => {
-                const id = e.currentTarget.dataset.id;
-                let currentReminders = getReminders();
-                const index = currentReminders.findIndex(rem => rem.id === id);
-                if (index > -1) {
-                    currentReminders[index].completed = true;
-                    saveReminders(currentReminders);
-                    renderReminders(); // Re-render the main reminders page as well
-                }
-            };
-        });
-    }
-    if (window.lucide) window.lucide.createIcons();
+// NEU: Funktion zum Zurücksetzen des Erinnerungsformulars
+function resetReminderForm() {
+    editingReminderId = null;
+    reminderTextEl.value = '';
+    reminderNoteEl.value = '';
+    reminderDateEl.value = '';
+    reminderTimeEl.value = '';
+    notificationRulesContainer.innerHTML = '';
+    addNotificationRule(); // Add one default rule
+    addReminderBtn.textContent = 'Eintrag hinzufügen';
+    addReminderBtn.classList.remove('btn-secondary');
+    addReminderBtn.classList.add('btn-primary');
+    document.getElementById('cancelEditReminderBtn').style.display = 'none'; // Hide cancel button
 }
 
-// Event listeners for notification dropdown
+// --- Notification Logic ---
+
+function checkRemindersDue() {
+    const now = new Date();
+    const allReminders = getReminders();
+    let remindersModified = false;
+
+    allReminders.forEach(rem => {
+        if (rem.completed) return;
+
+        const dueDate = new Date(`${rem.date}T${rem.time}`);
+
+        rem.notifications.forEach(rule => {
+            if (rule.triggered) return;
+
+            let triggerTime = new Date(dueDate);
+            if (rule.type === 'hours_before') {
+                triggerTime.setHours(triggerTime.getHours() - parseInt(rule.value, 10));
+            } else if (rule.type === 'days_before') {
+                triggerTime.setDate(triggerTime.getDate() - parseInt(rule.value, 10));
+            }
+
+            if (now >= triggerTime) {
+                console.log(`Triggering notification for: ${rem.text}`);
+                // Show system notification
+                new Notification(rem.type, {
+                    body: rem.text,
+                    icon: './favicon.ico' // Optional: Add an icon
+                });
+
+                // Add to triggered list
+                const triggered = getTriggeredNotifications();
+                triggered.push({
+                    id: `trig_${Date.now()}`,
+                    text: rem.text,
+                    type: rem.type,
+                    due: `${rem.date} ${rem.time}`
+                });
+                saveTriggeredNotifications(triggered);
+
+                // Mark as triggered in original reminder
+                rule.triggered = true;
+                remindersModified = true;
+            }
+        });
+    });
+
+    if (remindersModified) {
+        saveReminders(allReminders);
+    }
+}
+
+function updateReminderNotificationUI() {
+    if (!reminderCountEl || !notificationRemindersListEl) return;
+
+    const triggeredNotifications = getTriggeredNotifications();
+    
+    reminderCountEl.textContent = triggeredNotifications.length;
+    reminderCountEl.style.display = triggeredNotifications.length > 0 ? 'flex' : 'none';
+
+    if (triggeredNotifications.length === 0) {
+        notificationRemindersListEl.innerHTML = '<p class="no-reminders">Keine neuen Benachrichtigungen.</p>';
+    } else {
+        notificationRemindersListEl.innerHTML = triggeredNotifications.map(n => `
+            <div class="notification-item" data-id="${n.id}">
+                <div class="notification-item-text">
+                    <b>${escapeHtml(n.type)}: ${escapeHtml(n.text)}</b>
+                    <small>Fällig: ${escapeHtml(n.due)}</small>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Add "Clear All" button if not present
+    let clearBtn = reminderNotificationDropdown.querySelector('.clear-all-notifications');
+    if (!clearBtn) {
+        clearBtn = document.createElement('button');
+        clearBtn.className = 'btn btn-text danger clear-all-notifications';
+        clearBtn.textContent = 'Alle löschen';
+        clearBtn.onclick = (e) => {
+            e.stopPropagation();
+            saveTriggeredNotifications([]);
+        };
+        // Insert it in the footer
+        const footer = reminderNotificationDropdown.querySelector('.notification-footer');
+        if(footer) footer.prepend(clearBtn);
+    }
+}
+
+
+// --- Event Listeners & Initial Load ---
+
 if (reminderNotificationBtn) {
     reminderNotificationBtn.onclick = (e) => {
-        e.stopPropagation(); // Prevent document click from closing immediately
+        e.stopPropagation();
+        updateReminderNotificationUI(); // Ensure list is up-to-date before showing
         reminderNotificationDropdown.classList.toggle('show');
     };
 }
 
 if (closeReminderDropdownBtn) {
-    closeReminderDropdownBtn.onclick = () => {
-        reminderNotificationDropdown.classList.remove('show');
-    };
+    closeReminderDropdownBtn.onclick = () => reminderNotificationDropdown.classList.remove('show');
 }
 
 if (goToRemindersPageBtn) {
     goToRemindersPageBtn.onclick = () => {
         showPage('reminders');
         reminderNotificationDropdown.classList.remove('show');
-        // Update title and nav active state
         const pageTitle = document.getElementById('page-title');
-        if (pageTitle) {
-            pageTitle.textContent = 'Erinnerungen';
-        }
+        if (pageTitle) pageTitle.textContent = 'Erinnerungen';
         const navLinks = document.querySelectorAll('.nav-link');
         navLinks.forEach(l => l.classList.remove('active'));
-        const navReminders = document.getElementById('navReminders');
-        if (navReminders) navReminders.classList.add('active');
+        document.getElementById('navReminders')?.classList.add('active');
     };
 }
 
-// Close dropdown if clicked outside
 document.addEventListener('click', (e) => {
     if (reminderNotificationDropdown && !reminderNotificationDropdown.contains(e.target) && !reminderNotificationBtn.contains(e.target)) {
         reminderNotificationDropdown.classList.remove('show');
     }
 });
 
-
-// Initial render for reminders and notifications when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Request permission for notifications
+    if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+    }
+
+    if(document.getElementById('pageReminders')) {
+        resetReminderForm(); // Initialize form with a default rule and reset state
+    }
+    
     renderReminders();
-    updateReminderNotification();
+    updateReminderNotificationUI();
+
+    // Start the reminder checker
+    setInterval(checkRemindersDue, 60000); // Check every minute
+    checkRemindersDue(); // Also check once on load
 });
