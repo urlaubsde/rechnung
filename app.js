@@ -40,6 +40,21 @@ document.addEventListener('DOMContentLoaded', () => {
 function format(n){return Number(n||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function toNum(v){return parseFloat(String(v).replace(",", "."))||0}
 
+// --- INVOICE TYPE SWITCHER ---
+function updateInvoiceFormDisplay() {
+    const invoiceTypeSelector = document.getElementById('invoiceTypeSelector');
+    if (!invoiceTypeSelector) return; // Only run on invoice page
+    
+    const passengersCard = document.getElementById('passengersCard');
+    const flightDetailsCard = document.getElementById('flightDetailsCard');
+    const selectedType = document.querySelector('input[name="invoiceType"]:checked').value;
+
+    const isSimple = selectedType === 'simple';
+    // Use 'block' as it's the default for divs, or 'flex' if they have specific display styles
+    if (passengersCard) passengersCard.style.display = isSimple ? 'none' : 'block';
+    if (flightDetailsCard) flightDetailsCard.style.display = isSimple ? 'none' : 'block';
+}
+
 // --- SEITENNAVIGATION ---
 const pageHome = document.getElementById('pageHome');
 const pageInvoices = document.getElementById('pageInvoices');
@@ -149,9 +164,23 @@ function showPage(pageId) {
   } else if (pageId === 'calculatorSettings' && pageCalculatorSettings) {
     pageCalculatorSettings.style.display = 'flex';
   } else { // Standardfall ist 'invoices'
-    if(pageInvoices) pageInvoices.style.display = 'flex'; // Use flex for new layout
+    if(pageInvoices) {
+        pageInvoices.style.display = 'flex'; // Use flex for new layout
+        updateInvoiceFormDisplay(); // Set initial form display for invoice type
+    }
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const invoiceTypeSelector = document.getElementById('invoiceTypeSelector');
+    if (invoiceTypeSelector) {
+        // This listener handles changes to the invoice type radio buttons
+        invoiceTypeSelector.addEventListener('change', () => {
+            updateInvoiceFormDisplay();
+            updatePreview(); // Update preview when type changes
+        });
+    }
+});
 if(navButtons.home) navButtons.home.onclick = () => showPage('home');
 if(navButtons.saved) navButtons.saved.onclick = () => showPage('saved');
 if(navButtons.reminders) navButtons.reminders.onclick = () => showPage('reminders'); // New event listener
@@ -298,6 +327,8 @@ const sequencePrefix = document.getElementById('sequencePrefix')
 const sequenceStart = document.getElementById('sequenceStart')
 const resetSequenceBtn = document.getElementById('resetSequence')
 const headingColorEl = document.getElementById('headingColor');
+const enableVatEl = document.getElementById('enableVat');
+const vatRateEl = document.getElementById('vatRate');
 const updatePreviewBtn = document.getElementById('updatePreviewBtn');
 
 // NEUE ELEMENT-REFERENZEN FÜR RECHNUNGSVERWALTUNG
@@ -395,7 +426,7 @@ if(headingColorEl) headingColorEl.oninput = ()=>{ applyBackgroundSettings(); upd
 if(clearBgBtn) clearBgBtn.onclick = ()=>{
   bgToggle.checked = false; bgSize.value = 100; bgOpacity.value = 0.15;
   bgColor.value = '#ffffff'; bgColorOpacity.value = 0.85;
-  headingColorEl.value = '#0277bd';
+  headingColorEl.value = '#556B2F';
   applyBackgroundSettings(); updatePreview();
 }
 
@@ -744,31 +775,44 @@ function updatePreview(){
   
   let netto=0
   
-  // ========== START: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
-  const passengers=[...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>{
-    const name = r.querySelector('.pname').value;
-    const dob = r.querySelector('.pdob').value;
-    
-    // Sammle und formatiere Gepäck
-    const baggageData = collectBaggageData(r);
-    const outBaggage = formatBaggage(baggageData.outbound);
-    const retBaggage = formatBaggage(baggageData.return);
-
-    let baggageInfo = '';
-    if (outBaggage) {
-        baggageInfo += `<br><small style="color: #555;"><b>Hinflug:</b> ${escapeHtml(outBaggage)}</small>`;
-    }
-    // Zeige Rückflug-Gepäck nur an, wenn die Rückflug-Sektion existiert
-    if (retBaggage && document.getElementById('returnSection')) {
-        baggageInfo += `<br><small style="color: #555;"><b>Rückflug:</b> ${escapeHtml(retBaggage)}</small>`;
-    }
-    
-    return `<li>${escapeHtml(name)} (${dob})${baggageInfo}</li>`;
-  }).join("")
-  // ========== ENDE: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
+  // NEU: VAT Einstellungen
+  const enableVat = enableVatEl ? enableVatEl.checked : false;
+  const vatRate = vatRateEl ? parseFloat(vatRateEl.value) / 100 : 0.19; // Default 19%
+  let vatAmount = 0;
+  let totalGross = 0;
   
-  const outboundFlights=collectFlights('outboundBody')
-  const returnFlights=document.getElementById('returnBody') ? collectFlights('returnBody') : []
+  // ========== START: GEPÄCK-ÄNDERUNG (Vorschau-Logik) ==========
+  const invoiceType = document.querySelector('input[name="invoiceType"]:checked') ? document.querySelector('input[name="invoiceType"]:checked').value : 'full';
+  let passengers = '';
+  let outboundFlights = [];
+  let returnFlights = [];
+
+  if (invoiceType === 'full') {
+      passengers = [...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>{
+        const name = r.querySelector('.pname').value;
+        const dob = r.querySelector('.pdob').value;
+        
+        // Sammle und formatiere Gepäck
+        const baggageData = collectBaggageData(r);
+        const outBaggage = formatBaggage(baggageData.outbound);
+        const retBaggage = formatBaggage(baggageData.return);
+
+        let baggageInfo = '';
+        if (outBaggage) {
+            baggageInfo += `<br><small style="color: #555;"><b>Hinflug:</b> ${escapeHtml(outBaggage)}</small>`;
+        }
+        // Zeige Rückflug-Gepäck nur an, wenn die Rückflug-Sektion existiert
+        if (retBaggage && document.getElementById('returnSection')) {
+            baggageInfo += `<br><small style="color: #555;"><b>Rückflug:</b> ${escapeHtml(retBaggage)}</small>`;
+        }
+        
+        return `<li>${escapeHtml(name)} (${dob})${baggageInfo}</li>`;
+      }).join("");
+
+      outboundFlights = collectFlights('outboundBody');
+      returnFlights = document.getElementById('returnBody') ? collectFlights('returnBody') : [];
+  }
+  
   applyBackgroundSettings()
 
   function renderFlights(title, flights) {
@@ -777,7 +821,7 @@ function updatePreview(){
     for (let i = 0; i < flights.length; i++) {
         const f = flights[i];
         if (f.airline || f.pnr) { rowsHtml += `<tr class="layover-row" style="text-align:left; font-style:normal;"><td colspan="5" style="padding: 6px 8px;"><b>${escapeHtml(f.airline || "")}</b> ${f.pnr ? `— PNR: ${escapeHtml(f.pnr)}` : ""}</td></tr>`; }
-        rowsHtml += `<tr><td>${escapeHtml(f.fromCity)}</td><td>${escapeHtml(f.toCity)}</td><td>${f.depDate} ${f.depTime}</td><td>${f.arrDate} ${f.arrTime}</td><td>${f.duration}</td></tr>`;
+        rowsHtml += `<tr><td>${escapeHtml(f.fromCity)}</td><td>${escapeHtml(f.toCity)}</td><td>${f.depDate}<br>${f.depTime}</td><td>${f.arrDate}<br>${f.arrTime}</td><td>${f.duration}</td></tr>`;
         if (i < flights.length - 1) {
             const nextFlight = flights[i + 1];
             if (f.arrDate && f.arrTime && nextFlight.depDate && nextFlight.depTime) {
@@ -807,6 +851,22 @@ function updatePreview(){
     return `<tr><td>${escapeHtml(opt)}</td><td>${escapeHtml(d)}</td><td class="center">${q}</td><td class="center">${format(p)}</td><td class="center">${format(line)}</td></tr>`
   }).join("")
 
+    if (enableVat) {
+        vatAmount = netto * vatRate;
+        totalGross = netto + vatAmount;
+    } else {
+        totalGross = netto;
+    }
+
+    const vatRow = enableVat ? `
+        <tr class="vat-row">
+            <td colspan="4" style="text-align:right; padding-right: 20px;">Mehrwertsteuer (${(vatRate * 100).toFixed(1)}%)</td>
+            <td class="center">${format(vatAmount)} €</td>
+        </tr>
+    ` : '';
+
+    const vatDisclaimer = enableVat ? '' : `<p style="margin-top:20px;font-size:13px;color:#555">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>`;
+
     const contactEmail = document.getElementById('contactEmail') ? document.getElementById('contactEmail').value : 'urlaubsde@gmail.com';
     const contactPhone = document.getElementById('contactPhone') ? document.getElementById('contactPhone').value : '+4917664957576';
 
@@ -825,6 +885,7 @@ function updatePreview(){
           </div>
         </div>
     </div>
+    ${invoiceType === 'full' ? `
     <div class="pdf-block invoice-passengers">
         <h3>Passagiere</h3>
         <ul>${passengers}</ul>
@@ -835,14 +896,18 @@ function updatePreview(){
     <div class="pdf-block invoice-return">
         ${renderFlights("Rückflug",returnFlights)}
     </div>
+    ` : ''}
     <div class="pdf-block invoice-payment-block">
-        <h3>Weitere Leistungen</h3>
+        <h3>Leistungen</h3>
         <table>
           <thead><tr><th>Option</th><th>Beschreibung</th><th class="center">Menge</th><th class="center">Preis (€ / Stück)</th><th class="center">Gesamt (€)</th></tr></thead>
           <tbody>${items}</tbody>
-          <tfoot><tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px;">Gesamtsumme</td><td class="center">${format(netto)} €</td></tr></tfoot>
+          <tfoot>
+            ${vatRow}
+            <tr class="total-row"><td colspan="4" style="text-align:right; padding-right: 20px;">Gesamtsumme</td><td class="center">${format(totalGross)} €</td></tr>
+          </tfoot>
         </table>
-        <p style="margin-top:20px;font-size:13px;color:#555">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>
+        ${vatDisclaimer}
         ${note ? `<h3>Notiz</h3><p>${escapeHtml(note).replace(/\n/g,"<br>")}</p>` : ""}
         ${paymentHtml}
     </div>
@@ -1016,31 +1081,42 @@ function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,
 function collectInvoiceData(){
   const totalOutboundEl = document.getElementById('totalOutboundDuration');
   const totalReturnEl = document.getElementById('totalReturnDuration');
-  return {
+  const invoiceType = document.querySelector('input[name="invoiceType"]:checked') ? document.querySelector('input[name="invoiceType"]:checked').value : 'full';
+
+  const data = {
     number: invoiceNumberEl.value, date: invoiceDateEl.value,
     from: document.getElementById('from').value, to: document.getElementById('to').value,
     customerEmail: document.getElementById('customerEmail').value,
     customerPhone: document.getElementById('customerPhone').value,
     note: document.getElementById('note').value, payment: document.getElementById('payment').value,
-    
-    // ========== START: GEPÄCK-ÄNDERUNG (Speichern) ==========
-    passengers: [...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>({ 
-        name: r.querySelector('.pname').value, 
-        dob: r.querySelector('.pdob').value,
-        baggage: collectBaggageData(r) // Verwende die neue Helferfunktion
-    })),
-    // ========== ENDE: GEPÄCK-ÄNDERUNG (Speichern) ==========
-    
-    outbound: collectFlights('outboundBody'),
-    returns: document.getElementById('returnBody') ? collectFlights('returnBody') : [],
-    totalOutboundDuration: totalOutboundEl ? totalOutboundEl.value : '',
-    totalReturnDuration: totalReturnEl ? totalReturnEl.value : '',
     paymentMethod: document.getElementById('paymentMethod').value, 
     items: [...document.querySelectorAll('#itemsBody tr')].map(r=>({ option: r.querySelector('.opt').value, desc: r.querySelector('.desc').value, qty: r.querySelector('.qty').value, price: r.querySelector('.price').value })),
     logo: logoData,
     bgSettings: { enabled: bgToggle.checked, size: bgSize.value, opacity: bgOpacity.value, color: bgColor.value, colorOpacity: bgColorOpacity.value, headingColor: headingColorEl.value },
-    createdAt: new Date().toISOString()
+    vatSettings: { enableVat: enableVatEl.checked, vatRate: vatRateEl.value },
+    createdAt: new Date().toISOString(),
+    invoiceType: invoiceType // Save the type
+  };
+
+  if (invoiceType === 'full') {
+    data.passengers = [...document.querySelectorAll('#passengerBody > tr:not(.baggage-row)')].map(r=>({ 
+        name: r.querySelector('.pname').value, 
+        dob: r.querySelector('.pdob').value,
+        baggage: collectBaggageData(r)
+    }));
+    data.outbound = collectFlights('outboundBody');
+    data.returns = document.getElementById('returnBody') ? collectFlights('returnBody') : [];
+    data.totalOutboundDuration = totalOutboundEl ? totalOutboundEl.value : '';
+    data.totalReturnDuration = totalReturnEl ? totalReturnEl.value : '';
+  } else {
+    data.passengers = [];
+    data.outbound = [];
+    data.returns = [];
+    data.totalOutboundDuration = '';
+    data.totalReturnDuration = '';
   }
+
+  return data;
 }
 
 function saveInvoice(){
@@ -1575,6 +1651,15 @@ function loadInvoice(number){
   const list = JSON.parse(localStorage.getItem('invoices')||'[]')
   const inv = list.find(i=>i.number === number)
   if(!inv){ alert('Rechnung nicht gefunden') ; return }
+
+  // Set invoice type radio button
+  const invoiceType = inv.invoiceType || 'full';
+  const radioBtn = document.querySelector(`input[name="invoiceType"][value="${invoiceType}"]`);
+  if (radioBtn) radioBtn.checked = true;
+  
+  // Update form display based on type. Call this before populating fields.
+  updateInvoiceFormDisplay();
+
   invoiceNumberEl.value = inv.number; invoiceDateEl.value = inv.date
   document.getElementById('from').value = inv.from || ''; document.getElementById('to').value = inv.to || ''
   document.getElementById('note').value = inv.note || ''; document.getElementById('payment').value = inv.payment || ''
@@ -1619,7 +1704,11 @@ function loadInvoice(number){
     bgToggle.checked = inv.bgSettings.enabled; bgSize.value = inv.bgSettings.size
     bgOpacity.value = inv.bgSettings.opacity; bgColor.value = inv.bgSettings.color
     bgColorOpacity.value = inv.bgSettings.colorOpacity;
-    headingColorEl.value = inv.bgSettings.headingColor || '#0277bd';
+    headingColorEl.value = inv.bgSettings.headingColor || '#556B2F';
+  }
+  if (inv.vatSettings) {
+    enableVatEl.checked = inv.vatSettings.enableVat;
+    vatRateEl.value = inv.vatSettings.vatRate;
   }
   applyBackgroundSettings(); 
   toggleBankDetails(); 
@@ -1646,6 +1735,10 @@ function saveInvoiceSettings() {
             enableSequence: enableSequence.checked,
             prefix: sequencePrefix.value,
             start: sequenceStart.value
+        },
+        vatSettings: {
+            enableVat: enableVatEl.checked,
+            vatRate: vatRateEl.value
         },
         contactEmail: document.getElementById('contactEmail').value,
         contactPhone: document.getElementById('contactPhone').value
@@ -1682,6 +1775,12 @@ function loadInvoiceSettings() {
         sequenceStart.value = settings.sequence.start;
     }
 
+    // Apply VAT settings
+    if (settings.vatSettings) {
+        enableVatEl.checked = settings.vatSettings.enableVat;
+        vatRateEl.value = settings.vatSettings.vatRate;
+    }
+
     // Apply Contact Info settings
     if (settings.contactEmail && document.getElementById('contactEmail')) {
         document.getElementById('contactEmail').value = settings.contactEmail;
@@ -1698,6 +1797,13 @@ function loadInvoiceSettings() {
 const saveInvoiceSettingsBtn = document.getElementById('saveInvoiceSettings');
 if (saveInvoiceSettingsBtn) {
     saveInvoiceSettingsBtn.onclick = saveInvoiceSettings;
+}
+
+if (enableVatEl) {
+    enableVatEl.onchange = () => { updatePreview(); saveInvoiceSettings(); };
+}
+if (vatRateEl) {
+    vatRateEl.oninput = () => { updatePreview(); saveInvoiceSettings(); };
 }
 
 function loadInvoiceAndDownload(number){ 
@@ -1875,20 +1981,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyBtn = document.getElementById('copyCalcResult');
     const settingsGrid = document.getElementById('percentageSettingsGrid');
     const resetBtn = document.getElementById('resetPercentages');
-    const toastContainer = document.getElementById('toast-container');
 
     let percentageInputs = {};
-
-    // --- Toast Notification --- 
-    function showToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = message;
-        toastContainer.appendChild(toast);
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
-    }
 
     // --- Main Calculation Logic ---
     function calculate() {
@@ -2205,8 +2299,11 @@ function loadReminderForEdit(id) {
         addNotificationRule(rule.type, rule.value);
     });
 
-    // Change button text
-    addReminderBtn.textContent = 'Änderungen speichern';
+    // Change button text and icon
+    addReminderBtn.querySelector('span').textContent = 'Änderungen speichern';
+    addReminderBtn.querySelector('i').setAttribute('data-lucide', 'save');
+    if(window.lucide) window.lucide.createIcons();
+
     addReminderBtn.classList.remove('btn-primary');
     addReminderBtn.classList.add('btn-secondary');
     document.getElementById('cancelEditReminderBtn').style.display = 'inline-flex'; // Show cancel button
@@ -2224,7 +2321,7 @@ if (cancelEditReminderBtn) {
 }
 
 if (addReminderBtn) {
-    addReminderBtn.onclick = () => {
+    addReminderBtn.addEventListener('click', () => {
         const type = document.querySelector('input[name="entryType"]:checked').value;
         const text = reminderTextEl.value.trim();
         const note = reminderNoteEl.value.trim();
@@ -2286,7 +2383,7 @@ if (addReminderBtn) {
         saveReminders(currentReminders);
         resetReminderForm();
         renderReminders();
-    };
+    });
 }
 
 // NEU: Funktion zum Zurücksetzen des Erinnerungsformulars
@@ -2298,7 +2395,11 @@ function resetReminderForm() {
     reminderTimeEl.value = '';
     notificationRulesContainer.innerHTML = '';
     addNotificationRule(); // Add one default rule
-    addReminderBtn.textContent = 'Eintrag hinzufügen';
+    
+    addReminderBtn.querySelector('span').textContent = 'Eintrag hinzufügen';
+    addReminderBtn.querySelector('i').setAttribute('data-lucide', 'plus');
+    if(window.lucide) window.lucide.createIcons();
+
     addReminderBtn.classList.remove('btn-secondary');
     addReminderBtn.classList.add('btn-primary');
     document.getElementById('cancelEditReminderBtn').style.display = 'none'; // Hide cancel button
