@@ -105,8 +105,15 @@
                 
                                 <div id="pageInvoices" class="page" style="display: none;">
                                     <div class="card">
-                                        <div class="card-header"><h3>Grunddaten</h3></div>
-                                        <div class="card-content grid-2">
+                        <div class="card-header"><h3>Grunddaten</h3></div>
+                        <div class="card-content grid-2">
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Rechnungstyp</label>
+                                <div class="radio-group" id="invoiceTypeSelector">
+                                    <label><input type="radio" name="invoiceType" value="full" checked> Vollständige Rechnung (mit Flug)</label>
+                                    <label><input type="radio" name="invoiceType" value="simple"> Einfache Rechnung (ohne Flug)</label>
+                                </div>
+                            </div>
                                             <div class="form-group"><label for="invoiceNumber">Rechnungsnummer</label><input id="invoiceNumber"></div>
                                             <div class="form-group"><label for="invoiceDate">Rechnungsdatum</label><input type="date" id="invoiceDate"></div>
                                             <div class="form-group">
@@ -129,7 +136,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                     <div class="card">
+                                     <div class="card" id="passengersCard">
                                         <div class="card-header"><h3>Passagiere</h3></div>
                                         <div class="card-content">
                                             <div class="table-wrapper">
@@ -141,7 +148,7 @@
                                             <div class="card-actions"><button class="btn btn-secondary" id="addPassenger"><i data-lucide="plus"></i>Passagier hinzufügen</button></div>
                                         </div>
                                     </div>
-                                    <div class="card">
+                                    <div class="card" id="flightDetailsCard">
                                         <div class="card-header"><h3>Flugdetails</h3></div>
                                         <div class="card-content">
                                             <h4>Hinflug</h4>
@@ -159,7 +166,7 @@
                                         </div>
                                     </div>
                                      <div class="card">
-                                        <div class="card-header"><h3>Weitere Leistungen</h3></div>
+                                        <div class="card-header"><h3>Leistungen</h3></div>
                                         <div class="card-content">
                                             <div class="table-wrapper">
                                                 <table id="itemsTable">
@@ -288,7 +295,7 @@
                                 </div>
                             </fieldset>
                             <div class="card-actions">
-                                <button class="btn btn-primary" id="addReminderBtn"><i data-lucide="plus"></i>Eintrag hinzufügen</button>
+                                <button class="btn btn-primary" id="addReminderBtn"><i data-lucide="plus"></i><span>Eintrag hinzufügen</span></button>
                                 <button class="btn btn-text" id="cancelEditReminderBtn" style="display: none;"><i data-lucide="x"></i>Abbrechen</button>
                             </div>
                         </div>
@@ -378,7 +385,7 @@ Verwendungszweck: Rechnungsnummer</textarea>
                         <div class="card-header"><h3>Branding & Design (für PDF)</h3></div>
                         <div class="card-content">
                              <div class="grid-2">
-                                <div class="form-group"><label>Farbe der Überschriften</label><input type="color" id="headingColor" value="#0277bd"></div>
+                                <div class="form-group"><label>Farbe der Überschriften</label><input type="color" id="headingColor" value="#556B2F"></div>
                             </div>
                             <fieldset>
                                 <legend>Logo als Seitenhintergrund</legend>
@@ -394,6 +401,16 @@ Verwendungszweck: Rechnungsnummer</textarea>
                                 </div>
                                 <div class="card-actions"><button class="btn btn-text" id="clearBg">Hintergrund zurücksetzen</button></div>
                             </fieldset>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>Mehrwertsteuer (VAT) Einstellungen</h3></div>
+                        <div class="card-content">
+                            <label class="inline-label"><input type="checkbox" id="enableVat"> Mehrwertsteuer berechnen</label>
+                            <div class="form-group">
+                                <label for="vatRate">Mehrwertsteuersatz (%)</label>
+                                <input type="number" id="vatRate" value="19" min="0" step="0.1">
+                            </div>
                         </div>
                     </div>
                     <div class="card">
