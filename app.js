@@ -40,6 +40,26 @@ document.addEventListener('DOMContentLoaded', () => {
 function format(n){return Number(n||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function toNum(v){return parseFloat(String(v).replace(",", "."))||0}
 
+// Toast Notification Function
+function showToast(message, type = 'info', duration = 3000) {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
+    // Force reflow to enable transition
+    void toast.offsetWidth; 
+    toast.classList.add('show');
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        toast.addEventListener('transitionend', () => toast.remove());
+    }, duration);
+}
+
 // --- INVOICE TYPE SWITCHER ---
 function updateInvoiceFormDisplay() {
     const invoiceTypeSelector = document.getElementById('invoiceTypeSelector');
@@ -2154,9 +2174,19 @@ function addNotificationRule(type = 'at_due_date', value = '') {
     valueInput.style.display = 'none';
 
     const removeBtn = document.createElement('button');
-    removeBtn.className = 'btn btn-icon danger';
+    removeBtn.className = 'btn btn-icon danger remove-notification-rule';
     removeBtn.innerHTML = '<i data-lucide="x"></i>';
-    removeBtn.onclick = () => ruleDiv.remove();
+    removeBtn.onclick = () => {
+        if (notificationRulesContainer.children.length > 1) {
+            ruleDiv.remove();
+            // After removal, if only one rule remains, hide its remove button
+            if (notificationRulesContainer.children.length === 1) {
+                notificationRulesContainer.querySelector('.remove-notification-rule').style.display = 'none';
+            }
+        } else {
+            showToast('Es muss mindestens eine Benachrichtigungsregel vorhanden sein.');
+        }
+    };
 
     const handleTypeChange = () => {
         const selectedType = typeSelect.value;
@@ -2184,6 +2214,15 @@ function addNotificationRule(type = 'at_due_date', value = '') {
     
     if (value) valueInput.value = value;
     handleTypeChange();
+
+    // Update visibility of all remove buttons
+    const allRemoveButtons = notificationRulesContainer.querySelectorAll('.remove-notification-rule');
+    if (allRemoveButtons.length > 1) {
+        allRemoveButtons.forEach(btn => btn.style.display = 'inline-flex');
+    } else {
+        // If there's only one rule, hide its remove button
+        allRemoveButtons.forEach(btn => btn.style.display = 'none');
+    }
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -2295,9 +2334,14 @@ function loadReminderForEdit(id) {
 
     // Clear existing notification rules and load the ones from the reminder
     notificationRulesContainer.innerHTML = '';
-    reminderToEdit.notifications.forEach(rule => {
-        addNotificationRule(rule.type, rule.value);
-    });
+    if (reminderToEdit.notifications && reminderToEdit.notifications.length > 0) {
+        reminderToEdit.notifications.forEach(rule => {
+            addNotificationRule(rule.type, rule.value);
+        });
+    } else {
+        addNotificationRule(); // Ensure at least one rule is present
+    }
+    
 
     // Change button text and icon
     addReminderBtn.querySelector('span').textContent = 'Änderungen speichern';
@@ -2329,20 +2373,28 @@ if (addReminderBtn) {
         const time = reminderTimeEl.value;
 
         if (!text || !date || !time) {
-            alert('Bitte füllen Sie Titel, Fälligkeitsdatum und -zeit aus.');
+            showToast('Bitte füllen Sie Titel, Fälligkeitsdatum und -zeit aus.', 'error');
             return;
         }
 
         const notificationRules = [];
         notificationRulesContainer.querySelectorAll('.notification-rule').forEach(ruleEl => {
             const type = ruleEl.querySelector('.rule-type').value;
-            const value = ruleEl.querySelector('.value-input').value;
+            const valueInput = ruleEl.querySelector('.value-input');
+            const value = valueInput.style.display === 'block' ? valueInput.value : '';
+
+            // Basic validation for value inputs
+            if ((type === 'hours_before' || type === 'days_before') && (!value || parseInt(value) <= 0)) {
+                showToast('Bitte geben Sie einen gültigen Wert für die Benachrichtigungsregel ein.', 'error');
+                return; // Stop processing and alert user
+            }
+            
             // Assign a unique ID to each rule for tracking
             notificationRules.push({ id: `notif_${Date.now()}_${Math.random()}`, type, value, triggered: false });
         });
         
         if (notificationRules.length === 0) {
-            alert('Bitte fügen Sie mindestens eine Benachrichtigungsregel hinzu.');
+            showToast('Bitte fügen Sie mindestens eine Benachrichtigungsregel hinzu.', 'error');
             return;
         }
 
